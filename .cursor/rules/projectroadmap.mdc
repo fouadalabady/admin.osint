@@ -1,0 +1,312 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Admin Dashboard Rules & Construction Guidelines - Enhanced Edition
+
+**Version:** 1.8  
+**Last Updated:** 2025-03-21
+
+---
+
+## 1. Overview
+
+This document details the rules, technical requirements, and best practices for our headless admin dashboard and agency website. The dashboard serves as the central control panel for managing the website’s content and user interactions, including:
+
+- **Landing Page & Service Pages**  
+- **Blog**  
+- **Lead Generation Forms:**  
+  - Schedule a Demo  
+  - Contact Us  
+  - Newsletter Subscription  
+  - Join Our Team  
+
+All forms are protected with Google reCAPTCHA v3. The website supports both Arabic and English, with fully localized content.
+
+---
+
+## 2. Technology Stack
+
+### 2.1. Agency Website
+
+- **Frameworks & Libraries:**
+  - **Next.js v15:** For full-stack web application development. [@Next.js Documentation]
+  - **React v19:** For building dynamic user interfaces. [@React Documentation]
+- **Form Handling & Data Storage:**
+  - **Supabase:** Open-source alternative to Firebase for data storage and authentication.  
+    [@Supabase Documentation]
+  - **SMTP Mail Service:** For auto-replies and email notifications.
+- **Localization:**
+  - **next-intl:** Internationalization support for Next.js applications.  
+    [@next-intl Documentation]
+  - **i18n Routing:** Manages multilingual URL routing.  
+    [@i18n Routing Documentation]
+- **Security:**
+  - **Google reCAPTCHA v3:** Protects against spam and abuse.
+  - **Supabase with NextAuth.js & JSON Web Tokens:** For secure user authentication.  
+    [Supabase & NextAuth.js Documentation](mdc:https:/authjs.dev/getting-started/adapters/supabase?_gl=1*3k3fou*_gcl_au*MTc0MTAxNzAyMS4xNzQyMjcwNzg5)
+
+### 2.2. Admin Dashboard
+
+- **Frameworks & Libraries:**
+  - **Next.js v15** and **React v19** for a robust, dynamic interface.
+  - **NextAuth.js:** For secure user authentication and session management.  
+    [@NextAuth.js Documentation](mdc:https:/next-auth.js.org/getting-started/introduction)
+  - **shadcn/ui:**  
+    - **Important:** All UI components must be sourced exclusively from [ui.shadcn.com](mdc:https:/ui.shadcn.com) and its dependencies. This ensures consistency, maintainability, and compatibility across the project.  
+    [@shadcn/ui Documentation]
+- **Data Management:**
+  - **Supabase:** For database operations and real-time data synchronization.  
+    [@Supabase Documentation]
+- **Localization:**
+  - **next-intl** and **i18n Routing:** For managing multi-language content.
+- **Enhanced Security & Technical Features:**
+  - **Role-Based Access Control (RBAC):** Limits data access based on user roles.
+  - **Multi-Factor Authentication (MFA):** Especially for super admin accounts (see Section 4.3 for free alternatives).
+  - **OTP Verification:** For sensitive operations and additional auth security.
+  - **Session Management:** Sessions expire after 8 hours of inactivity, with token renewal mechanisms.
+
+---
+
+## 3. Functional Modules & Rules
+
+### 3.1. Lead Fetching and Organizing (userId_1)
+
+- **Submission Flow:**
+  1. **Form Submission:**  
+     - User submits any of the lead generation forms.  
+     - Google reCAPTCHA v3 validates the request.
+  2. **Data Processing:**  
+     - Successful validation triggers an SMTP-based auto-reply.  
+     - Data is then stored in the corresponding Supabase table.
+
+- **Database Structure:**
+  - Separate tables for each form.
+  - Data normalization to reduce redundancy and ensure integrity.
+
+- **Dashboard Interface:**
+  - **Submissions Page:**  
+    Divided into tabs by form type, with features including:
+    - Detailed individual submission views.
+    - Overview tables with:
+      - Date filtering
+      - Email/keyword search
+      - Advanced filtration options
+      - Export functionality (JSON, Excel, etc.)
+  - **Record Management:**  
+    Option to delete or archive individual records.
+  - **Audit Enhancements:**  
+    Comprehensive audit logs for all submission-related actions to support compliance and forensic analysis.
+
+---
+
+### 3.2. Blog Module (userId_2)
+
+- **CMS Capabilities:**
+  - Create, edit, and publish blog posts.
+  - Manage SEO-critical elements:
+    - Metadata
+    - Tags
+    - URL slugs
+
+- **Editor Integration:**
+  - Rich text editor for advanced content formatting.
+
+- **Security Measures:**
+  - Input validation and sanitization to prevent XSS and injection attacks.
+  - Secure API endpoints for content retrieval and submission.
+  - Audit logging for content changes to track editorial history and modifications.
+
+---
+
+### 3.3. Page Editor (userId_3)
+
+- **Purpose:**
+  - Manage and update localized content across the agency website.
+
+- **Functionality:**
+  - JSON-based editing interface for page structure and content.
+  - Supports dual language maintenance (Arabic and English) via i18n routing.
+  - Provides preview and version control for safe edits and rollbacks.
+
+- **Audit and Versioning Enhancements:**
+  - Detailed audit trails for content modifications.
+  - Version history tracking with rollback capabilities to previous stable releases.
+
+---
+
+### 3.4. Super Admin (userId_0)
+
+- **Role & Privileges:**
+  - Full control over all modules and system settings.
+  - Authority to override settings, manage user roles, and perform critical system operations.
+  - Access to advanced administrative tools and complete audit logs.
+
+- **Enhanced Security Measures:**
+  - Mandatory Multi-Factor Authentication (MFA).
+  - Regular audits of super admin actions to prevent unauthorized activities.
+  - Integration with SIEM (Security Information and Event Management) systems for real-time monitoring and alerts.
+
+---
+
+## 4. Additional Considerations
+
+### 4.1. Enhanced Auditing & Logging
+
+- **Structured Logging:**
+  - Utilize a robust logging library (e.g., Pino) to capture all system and user events in a structured JSON format.
+  - Record detailed information such as:
+    - Timestamps
+    - User IDs and roles
+    - IP addresses
+    - Specific actions performed
+  - **Audit Trails:**
+    - Maintain immutable audit logs for critical operations (form submissions, content edits, admin changes).
+    - Ensure logs are securely stored, encrypted at rest, and protected during transit.
+    - Implement log rotation and archiving policies to manage storage and facilitate long-term audits.
+  - **Real-Time Monitoring & Alerts:**
+    - Integrate with SIEM platforms to analyze logs in real time.
+    - Configure alerts for anomalous or suspicious activities, enabling rapid incident response.
+
+### 4.2. Enhanced Technical Requirements
+
+- **Security Enhancements:**
+  - **Encryption:**  
+    Ensure all data is encrypted both in transit (using TLS/SSL) and at rest.
+  - **Role-Based Access Control (RBAC):**  
+    Implement granular permissions to restrict access to sensitive data and functionalities.
+  - **Input Validation & Secure APIs:**  
+    Protect against XSS, SQL injection, and other common vulnerabilities through robust input sanitization.
+  - **Session & Token Management:**  
+    Enforce session expiration after 8 hours of inactivity and implement secure token refresh mechanisms.
+  - **OTP Verification:**  
+    Use secure, randomly generated OTPs for critical operations, delivered via trusted channels (email or SMS).
+
+---
+
+### 4.3. Enhanced Authentication & Registration Flows
+
+#### 4.3.1. Distinct Registration Workflows
+- Create separate registration forms tailored to each user type (e.g., super admin, content editor, standard user).  
+- Collect role-specific data and perform additional validations during registration (e.g., invite-only tokens for super admins).
+
+#### 4.3.2. Server-Centric Authentication
+- Use Next.js **Middleware** to protect specific routes, validating tokens or sessions on the server.  
+- Integrate with **NextAuth.js** to simplify OAuth providers, credential auths, and session handling.
+
+#### 4.3.3. Role-Based Access Control (RBAC)
+- Assign roles at registration or upon user promotion.  
+- Validate user roles on every secured API request or page load, ensuring only authorized roles can perform sensitive operations.
+
+#### 4.3.4. Secure Editing & Data Modification
+- Funnel all edits through server actions or authenticated API routes to centralize authorization checks.  
+- Implement **optimistic UI** updates with robust error handling for a better user experience.
+
+#### 4.3.5. MFA Alternatives
+- **Primary MFA (Recommended):** Email or SMS-based One-Time Password (OTP) for super admin and high-risk actions.  
+- **Free Alternative - TOTP (Time-Based One-Time Password):**  
+  - Integrate with apps like **Google Authenticator**, **Authy**, or **Microsoft Authenticator**.  
+  - These apps generate time-limited codes without additional licensing costs.  
+  - Can be used as a second factor for both standard and high-privilege user accounts.
+
+#### 4.3.6. Token & Session Management
+- Store tokens using **HTTP-only cookies** to mitigate XSS risks.  
+- Automatically refresh tokens before session expiry and invalidate them on logout or inactivity.
+
+#### 4.3.7. Audit Trails for Authentication
+- Log all auth attempts and registration processes (successful or failed), capturing:  
+  - User identifiers or emails  
+  - IP addresses  
+  - Timestamps  
+  - Action details (e.g., “User with email X requested password reset”)
+
+---
+
+## 5. Setup & Environment Variables
+
+To configure the project securely and ensure seamless deployment, define the following environment variables in your `.env` or server configuration. The table below outlines common variables; adjust according to your specific needs.
+
+| **Variable**            | **Description**                                                        | **Example**                     |
+|-------------------------|------------------------------------------------------------------------|---------------------------------|
+| `NEXTAUTH_URL`          | Base URL of your application for NextAuth.js.                         | `https://yourapp.com`           |
+| `NEXTAUTH_SECRET`       | Cryptographically secure key for encrypting tokens/sessions.          | `super-secret-key`              |
+| `SUPABASE_URL`          | Supabase Project URL.                                                  | `https://abcd1234.supabase.co`   |
+| `SUPABASE_ANON_KEY`     | Supabase public anonymous key.                                         | `eyJh...`                       |
+| `SUPABASE_SERVICE_KEY`  | Service key for server-side operations (use with caution).             | `eyJh...`                       |
+| `SMTP_HOST`             | SMTP server host for sending emails.                                   | `smtp.mailtrap.io`              |
+| `SMTP_PORT`             | SMTP server port.                                                      | `587`                           |
+| `SMTP_USER`             | Username for SMTP authentication.                                      | `username123`                   |
+| `SMTP_PASSWORD`         | Password for SMTP authentication.                                      | `secret-password`               |
+| `RECAPTCHA_SITE_KEY`    | Google reCAPTCHA site key.                                             | `6Lc...`                        |
+| `RECAPTCHA_SECRET_KEY`  | Google reCAPTCHA secret key.                                           | `6Lc...secret`                  |
+| `NEXT_PUBLIC_*`         | Public variables (for client usage) - e.g., localized strings, etc.     | (varies)                        |
+
+**Best Practices for Environment Variables:**
+1. Never commit `.env` files to version control.  
+2. Use secure storage solutions or secrets management for production environments (e.g., GitHub Actions secrets, Vercel environment variables).  
+3. Rotate keys and credentials regularly to enhance security.
+
+---
+
+## 6. Developer Guidance & AI Prompting
+
+Below are some general guidelines for developers or AI systems assisting with this project:
+
+1. **Understand the Project Structure**  
+   - Familiarize yourself with the folder organization:  
+     - `pages` or `app` directory for Next.js routes  
+     - `components` for shared React components  
+     - `utils` or `lib` for helper functions and constants  
+   - Identify the separate modules (Lead Management, Blog, Page Editor, etc.).
+
+2. **Set Up Your Local Environment**  
+   - Clone the repository and install dependencies (`npm install` or `yarn install`).  
+   - Create a `.env.local` file and populate it with the required environment variables.  
+   - Run `npm run dev` or `yarn dev` to start the development server.
+
+3. **UI Component Usage**  
+   - **Important:** All UI components must be sourced exclusively from [ui.shadcn.com](mdc:https:/ui.shadcn.com) and its dependencies. Do not integrate external UI libraries or custom components that bypass this standard, ensuring consistency across the project.
+
+4. **AI Prompting & Automation**  
+   - When using an AI assistant (e.g., ChatGPT, Copilot, or any codegen tools), provide the AI with relevant sections of this document when asking for code assistance (e.g., “Here is our environment variable scheme. Help me generate a NextAuth.js configuration.”).
+   - Clearly specify the desired outcome, such as “Generate a secure NextAuth.js [credentials or provider-based] auth flow with TOTP MFA.”
+
+5. **Cursor Rules & Execution**  
+   - While editing files, ensure your IDE or code editor is configured to auto-format (Prettier, ESLint).
+   - Keep environment variables or secrets hidden from public code blocks and commit messages.
+   - Use strong typed references (TypeScript recommended) to minimize runtime errors if possible.
+
+6. **Continuous Integration & Deployment**  
+   - Configure your CI/CD pipelines (e.g., GitHub Actions, Vercel) to validate environment variables before deployment.
+   - Automate tests (unit, integration, e2e) for each module, especially for authentication and data handling.
+
+7. **Testing & Validation**  
+   - Thoroughly test each environment-specific operation (Local, Staging, Production) to ensure environment variables work correctly.
+   - Use test accounts and mock services (like Mailtrap or a test SMTP provider) to verify email sending, reCAPTCHA, and other external services.
+
+8. **Security & Privacy Reminders**  
+   - Adhere to the principle of least privilege: only grant necessary permissions to each user role.
+   - Regularly monitor logs and set up alerts for suspicious activities.
+   - Always verify that no sensitive information is exposed in client-side logs or network requests.
+
+By following these guidelines and leveraging AI assistance where beneficial, you can streamline development, maintain high security standards, and keep the project organized and scalable.
+
+---
+
+## 7. Appendices
+
+### 7.1. References
+
+- [Next.js Documentation](mdc:https:/nextjs.org/docs)
+- [Next.js Authentication Guide](mdc:https:/nextjs.org/docs/app/building-your-application/authentication)
+- [React Documentation](mdc:https:/reactjs.org/docs/getting-started.html)
+- [Supabase Documentation](mdc:https:/supabase.com/docs)
+- [NextAuth.js Documentation](mdc:https:/next-auth.js.org/getting-started/introduction)
+- [shadcn/ui Documentation](mdc:https:/ui.shadcn.com)
+- [next-intl Documentation](mdc:https:/github.com/amannn/next-intl)
+- [i18n Routing Documentation](mdc:https:/nextjs.org/docs/advanced-features/i18n-routing)
+
+---
+
+*This document is intended to serve as a comprehensive guide for the AI agent, ensuring robust functionality, enhanced security, and complete auditability of the agency’s digital infrastructure.*
