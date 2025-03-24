@@ -71,9 +71,8 @@ export default function SetupPage() {
   return (
     <div className="container mx-auto py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Database Setup</h1>
-      <p className="mb-6 text-gray-600 dark:text-gray-400">
-        Use this page to set up required database tables and functions for the application.
-        Only proceed if you know what you're doing.
+      <p className="text-gray-600 mb-6">
+        This setup wizard will help you initialize your dashboard&apos;s database and create your first admin account.
       </p>
 
       {success && (

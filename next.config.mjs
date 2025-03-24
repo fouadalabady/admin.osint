@@ -15,7 +15,6 @@ const nextConfig = {
   // Optimize production builds
   poweredByHeader: false,
   reactStrictMode: true,
-  swcMinify: true,
   
   // Output as standalone for containerized deployments
   output: 'standalone',
