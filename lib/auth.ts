@@ -5,44 +5,13 @@
  */
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { AuthOptions } from 'next-auth';
+import { AuthOptions, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { z } from 'zod';
 import { Database } from './supabase/types';
-import { DatabaseUser } from './types/database';
+import { UserRole } from './types/auth';
 
 type DbUser = Database['public']['Tables']['users']['Row'];
-
-// Define custom user type that matches our database schema
-interface CustomUser {
-  id: string;
-  email: string;
-  name: string | null;
-  image: string | null;
-  role: DatabaseUser['role'];
-}
-
-// Extend next-auth types
-declare module 'next-auth' {
-  interface User extends CustomUser {}
-  
-  interface Session {
-    expires: string;
-    // @ts-expect-error
-    user: {
-      id: string;
-      email: string;
-      name?: string | null;
-      image?: string | null;
-      role: DatabaseUser['role'];
-    }
-  }
-
-  interface JWT {
-    role?: DatabaseUser['role'];
-    id?: string;
-  }
-}
 
 // Validate credentials schema
 const credentialsSchema = z.object({
@@ -68,7 +37,7 @@ export const authOptions: AuthOptions = {
           placeholder: 'Enter your password',
         },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials): Promise<User | null> {
         try {
           // Validate credentials
           const { email, password } = credentialsSchema.parse(credentials);
@@ -102,14 +71,24 @@ export const authOptions: AuthOptions = {
             throw new Error('Invalid user data');
           }
 
-          // Return user object that matches our CustomUser type
-          return {
+          // Map database role to UserRole type
+          const dbRole = dbUser.role as string;
+          let role: UserRole = 'user'; // Default to user role
+
+          if (dbRole === 'super_admin' || dbRole === 'admin' || dbRole === 'editor' || dbRole === 'user') {
+            role = dbRole as UserRole;
+          }
+
+          // Return user object that matches our User type
+          const user: User = {
             id: authData.user.id,
             email: authData.user.email ?? '',
             name: dbUser.user_metadata?.name ?? null,
             image: dbUser.user_metadata?.avatar_url ?? null,
-            role: dbUser.role,
+            role: role,
           };
+
+          return user;
         } catch (error) {
           console.error('Auth error:', error);
           return null;
@@ -127,13 +106,19 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name ?? null;
+        token.image = user.image ?? null;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.role = token.role as DatabaseUser['role'];
-        session.user.id = token.id as string;
+        session.user.role = token.role;
+        session.user.id = token.id;
+        session.user.email = token.email;
+        session.user.name = token.name ?? null;
+        session.user.image = token.image;
       }
       return session;
     },

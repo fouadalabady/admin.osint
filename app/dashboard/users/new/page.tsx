@@ -28,17 +28,23 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
-export default function CreateUserPage() {
+interface UserFormData {
+  name: string;
+  email: string;
+  role: string;
+}
+
+export default function NewUserPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const isSuperAdmin = (session?.user?.role as UserRole) === 'super_admin';
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UserFormData>({
+    name: '',
     email: '',
-    password: '',
-    role: 'user', // Default role
+    role: 'user',
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,143 +62,107 @@ export default function CreateUserPage() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      // Create user in Supabase Auth
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: formData.role,
-            status: 'pending', // Default status for new users
-          },
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify(formData),
       });
 
-      if (signUpError) {
-        throw signUpError;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create user');
       }
 
-      // Success! Redirect back to users list
       router.push('/dashboard/users');
-      router.refresh();
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to create user. Please try again.';
-      console.error('Registration error:', err);
-      setError(errorMessage);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create user');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="mb-6 text-2xl font-bold">Create New User</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">Create New User</h1>
 
       <Card>
         <CardHeader>
           <CardTitle>User Details</CardTitle>
-          <CardDescription>Add a new user to the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <label htmlFor="name" className="text-sm font-medium">
+                Name
+              </label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Enter user's name"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
               <Input
                 id="email"
-                name="email"
                 type="email"
-                placeholder="name@example.com"
                 value={formData.email}
-                onChange={handleChange}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="Enter user's email"
                 required
-                disabled={isLoading}
-                className="w-full"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Create a secure password"
-                value={formData.password}
-                onChange={handleChange}
+              <label htmlFor="role" className="text-sm font-medium">
+                Role
+              </label>
+              <select
+                id="role"
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value })
+                }
+                className="w-full p-2 border rounded-md"
                 required
-                disabled={isLoading}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">
-                Password must be at least 8 characters long
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">User Role</Label>
-              <Select 
-                value={formData.role} 
-                onValueChange={handleRoleChange}
-                disabled={isLoading}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Available Roles</SelectLabel>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="editor">Editor</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    {isSuperAdmin && (
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                    )}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {formData.role === 'super_admin' 
-                  ? 'Super Admins have full control over the entire system' 
-                  : formData.role === 'admin'
-                  ? 'Admins can manage users and content'
-                  : formData.role === 'editor'
-                  ? 'Editors can create and edit content'
-                  : 'Users have limited access to content'}
-              </p>
+                <option value="user">User</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
 
             {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+                {error}
+              </div>
             )}
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Creating...' : 'Create User'}
+              </Button>
+            </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/dashboard/users')}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            {isLoading ? 'Creating User...' : 'Create User'}
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );

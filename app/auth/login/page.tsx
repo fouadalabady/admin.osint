@@ -69,31 +69,27 @@ function LoginForm() {
     setSuccess('');
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setFormError('');
-    setSuccess('');
     setIsLoading(true);
 
     try {
-      console.log('Attempting to sign in with credentials');
-      console.log('Destination after login:', callbackUrl);
-
-      // Use signIn with redirect:true for a complete browser-handled redirect
-      // This skips client-side routing entirely and lets the server handle session
-      await signIn('credentials', {
-        redirect: true,
+      const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
-        callbackUrl,
+        redirect: false,
       });
 
-      // Code below won't execute due to the redirect, but keeping it
-      // as a fallback just in case
-      setSuccess('Login successful! Redirecting...');
-    } catch (err) {
-      console.error('Login error:', err);
-      setFormError('An unexpected error occurred. Please try again.');
+      if (!result?.ok) {
+        setFormError(result?.error || 'Authentication failed');
+        return;
+      }
+
+      router.push('/dashboard');
+    } catch (error) {
+      setFormError('An unexpected error occurred');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -141,7 +137,7 @@ function LoginForm() {
           )}
 
           <CardContent className="pt-4">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="login-email">Email</Label>
                 <Input

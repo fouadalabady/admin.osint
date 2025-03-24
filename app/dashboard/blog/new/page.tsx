@@ -1,169 +1,101 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { ArrowLeft, Save } from 'lucide-react';
-import Link from 'next/link';
+import { Textarea } from '@/components/ui/textarea';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function NewBlogPostPage() {
-  const router = useRouter();
-  const { status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      window.location.href = '/auth/login';
-    },
-  });
+    const router = useRouter();
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    excerpt: '',
-    content: '',
-    featuredImageUrl: '',
-  });
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setIsLoading(true);
+        setError(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+        try {
+            const response = await fetch('/api/blog/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title,
+                    content,
+                }),
+            });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log('Blog post data:', formData);
-    
-    // Redirect back to blog list
-    router.push('/dashboard/blog');
-    
-    setIsLoading(false);
-  };
+            const data = await response.json();
 
-  return (
-    <div className="container py-6 max-w-4xl">
-      <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/blog">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Posts
-          </Link>
-        </Button>
-      </div>
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create blog post');
+            }
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Create New Blog Post</h1>
-        <p className="text-muted-foreground">Share your insights with your audience</p>
-      </div>
+            router.push('/dashboard/blog');
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'Failed to create blog post');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Post Details</CardTitle>
-              <CardDescription>Basic information about your blog post</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  placeholder="Enter post title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+    return (
+        <div className="container mx-auto p-4">
+            <h1 className="text-2xl font-bold mb-6">Create New Blog Post</h1>
 
-              <div className="space-y-2">
-                <Label htmlFor="excerpt">Excerpt</Label>
-                <textarea
-                  id="excerpt"
-                  name="excerpt"
-                  className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="A brief summary of your post"
-                  value={formData.excerpt}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Post Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label htmlFor="title" className="text-sm font-medium">
+                                Title
+                            </label>
+                            <Input
+                                id="title"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Enter post title"
+                                required
+                            />
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="featuredImageUrl">Featured Image URL</Label>
-                <Input
-                  id="featuredImageUrl"
-                  name="featuredImageUrl"
-                  placeholder="https://example.com/image.jpg"
-                  value={formData.featuredImageUrl}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                        <div className="space-y-2">
+                            <label htmlFor="content" className="text-sm font-medium">
+                                Content
+                            </label>
+                            <Textarea
+                                id="content"
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="Write your blog post content..."
+                                className="min-h-[200px]"
+                                required
+                            />
+                        </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Content</CardTitle>
-              <CardDescription>Write your blog post content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <textarea
-                id="content"
-                name="content"
-                className="min-h-[300px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Write your blog post content here..."
-                value={formData.content}
-                onChange={handleChange}
-                required
-                disabled={isLoading}
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                Rich text editor coming soon. For now, you can use markdown formatting.
-              </p>
-            </CardContent>
-          </Card>
+                        {error && (
+                            <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+                                {error}
+                            </div>
+                        )}
 
-          <div className="flex justify-end gap-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => router.push('/dashboard/blog')}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Publish Post
-                </>
-              )}
-            </Button>
-          </div>
+                        <div className="flex justify-end">
+                            <Button type="submit" disabled={isLoading}>
+                                {isLoading ? 'Creating...' : 'Create Post'}
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
-      </form>
-    </div>
-  );
+    );
 } 
