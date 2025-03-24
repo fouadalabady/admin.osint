@@ -1,267 +1,287 @@
 # Supabase Local Development Guide
 
-This guide provides detailed instructions for working with Supabase locally in the OSINT Dashboard project, with special emphasis on database migrations and troubleshooting common issues.
+This guide provides detailed instructions for setting up and working with Supabase locally for development purposes, with specific focus on the password reset functionality and other authentication features.
 
-## Setting Up Local Supabase
+## Setting Up Supabase Locally
 
 ### Prerequisites
 
-- Docker installed and running
-- Node.js 18+
-- Supabase CLI installed
+- Node.js (version 18 or later)
+- Docker Desktop
+- Supabase CLI
 
-### Initial Setup
+### Installation Steps
 
-1. Install Supabase CLI globally:
+1. **Install Supabase CLI** (if not already installed):
+
+   ```bash
+   npm install -g supabase
+   ```
+
+2. **Start Supabase locally**:
+
+   ```bash
+   npx supabase start
+   ```
+
+   This command will:
+   - Pull necessary Docker images
+   - Start all Supabase services
+   - Set up a local PostgreSQL database
+   - Create default authentication tables
+   - Generate local API keys
+
+3. **Verify installation**:
+
+   ```bash
+   npx supabase status
+   ```
+
+   You should see output indicating all services are running.
+
+### Local Development URLs
+
+- **API URL**: http://127.0.0.1:54321
+- **Studio URL**: http://127.0.0.1:54323
+- **Inbucket (Email Testing)**: http://127.0.0.1:54324
+
+Take note of the `anon` and `service_role` keys displayed after starting Supabase, as you'll need these for your local `.env.local` file.
+
+## Configuring the Project
+
+1. **Create a `.env.local` file** with your local Supabase credentials:
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-local-anon-key>
+   SUPABASE_SERVICE_ROLE_KEY=<your-local-service-role-key>
+   ```
+
+2. **Start the application**:
+
+   ```bash
+   npm run dev
+   ```
+
+## Database Migrations
+
+### Creating Migration Files
+
+Migrations are stored in the `db/migrations` directory and follow this format:
+
+```
+YYYYMMDDHHmmss_migration-name.sql
+```
+
+To create a new migration file:
+
 ```bash
-npm install -g supabase
+export MIGRATION_NAME="create-password-reset-tables"
+export TIMESTAMP=$(date +%Y%m%d%H%M%S)
+touch "db/migrations/${TIMESTAMP}_${MIGRATION_NAME}.sql"
 ```
 
-2. Initialize Supabase in your project:
-```bash
-npx supabase init
-```
+### Migration Content Example
 
-3. Start Supabase locally:
-```bash
-npx supabase start
-```
+Here's an example of a migration file for the password reset functionality:
 
-This starts several services:
-- PostgreSQL database (port 54322)
-- Supabase API (port 54321)
-- Supabase Studio (port 54323)
-- Inbucket for email testing (port 54324)
-
-4. Set environment variables in `.env.local` to use local Supabase:
-```
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-The exact values will be shown in the console after running `supabase start`.
-
-## Working with Migrations
-
-### Migration Structure
-
-Our migration files are located in the `supabase/migrations` directory and follow this naming convention:
-```
-YYYYMMDD_description.sql
-```
-
-Example:
-```
-20240401000001_create_password_reset_verifications.sql
-```
-
-### Creating New Migrations
-
-1. Create a new migration file:
-```bash
-touch supabase/migrations/$(date +%Y%m%d%H%M%S)_descriptive_name.sql
-```
-
-2. Add SQL commands with proper error handling. Always use idempotent operations:
 ```sql
--- Create table if not exists
-CREATE TABLE IF NOT EXISTS public.my_table (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- Create password reset verifications table
+CREATE TABLE IF NOT EXISTS password_reset_verifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  type TEXT NOT NULL,
+  verified BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 hour',
+  CONSTRAINT unique_active_code UNIQUE (email, code, type, verified)
 );
 
--- Add policy with checks to prevent duplicate policies
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policy 
-    WHERE schemaname = 'public' 
-    AND tablename = 'my_table' 
-    AND policyname = 'My policy name'
-  ) THEN
-    CREATE POLICY "My policy name" ON public.my_table
-      FOR SELECT USING (true);
-  END IF;
-END
-$$;
+-- Enable RLS
+ALTER TABLE password_reset_verifications ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Service role can manage all verifications" 
+  ON password_reset_verifications 
+  USING (auth.role() = 'service_role');
+
+-- Create indices for faster lookups
+CREATE INDEX IF NOT EXISTS idx_verification_email ON password_reset_verifications (email);
+CREATE INDEX IF NOT EXISTS idx_verification_code ON password_reset_verifications (code);
+CREATE INDEX IF NOT EXISTS idx_verification_expires ON password_reset_verifications (expires_at);
 ```
 
 ### Applying Migrations
 
-Apply all migrations at once:
+To apply all pending migrations:
+
 ```bash
 npx supabase db reset
 ```
 
-This will:
-1. Wipe your local database
-2. Apply all migrations in order
-3. Seed the database if a seed file exists
+This command will:
+1. Detect all migration files in the `db/migrations` directory
+2. Apply them in chronological order
+3. Update the database schema
 
-## Database Tables for Password Reset Flow
+### Handling Migration Errors
 
-### password_reset_verifications Table
+If you encounter errors during migration:
 
-This table stores one-time passwords (OTP) for the password reset flow:
+1. Check the error message for specific issues
+2. Verify SQL syntax and constraints
+3. You can reset the entire database with `npx supabase db reset --force`
 
-```sql
-CREATE TABLE public.password_reset_verifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT NOT NULL,
-  code TEXT NOT NULL,
-  type TEXT NOT NULL,
-  verified BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  expires_at TIMESTAMPTZ NOT NULL,
-  
-  CONSTRAINT unique_active_code UNIQUE (email, code, type, verified)
-);
-```
+## Key Tables for Authentication
 
-Features:
-- Each code has a 1-hour expiration (expires_at)
-- Codes are marked as verified after use (verified)
-- The type field allows for different verification purposes (e.g., 'password_reset')
+### 1. Password Reset Verifications
+
+The `password_reset_verifications` table stores verification codes for password resets:
+
+| Column      | Type        | Description                   |
+|-------------|-------------|-------------------------------|
+| id          | UUID        | Primary key                   |
+| email       | TEXT        | User's email address          |
+| code        | TEXT        | Verification code             |
+| type        | TEXT        | Purpose (e.g. password_reset) |
+| verified    | BOOLEAN     | Whether code has been used    |
+| created_at  | TIMESTAMPTZ | Creation timestamp            |
+| expires_at  | TIMESTAMPTZ | Expiration timestamp          |
+
+### 2. OTP Verifications
+
+The `otp_verifications` table handles one-time password verification:
+
+| Column      | Type        | Description                   |
+|-------------|-------------|-------------------------------|
+| id          | UUID        | Primary key                   |
+| email       | TEXT        | User's email address          |
+| code        | TEXT        | OTP code                      |
+| type        | TEXT        | Purpose (e.g. login, action)  |
+| verified    | BOOLEAN     | Whether code has been used    |
+| created_at  | TIMESTAMPTZ | Creation timestamp            |
+| expires_at  | TIMESTAMPTZ | Expiration timestamp          |
+
+### 3. User Registration Requests
+
+The `user_registration_requests` table manages user registration processes:
+
+| Column           | Type        | Description                      |
+|------------------|-------------|----------------------------------|
+| id               | UUID        | Primary key                      |
+| email            | TEXT        | User's email address             |
+| token            | TEXT        | Verification token               |
+| status           | TEXT        | Status (pending, completed, etc) |
+| created_at       | TIMESTAMPTZ | Creation timestamp               |
+| expires_at       | TIMESTAMPTZ | Expiration timestamp             |
+| completed_at     | TIMESTAMPTZ | When registration was completed  |
+
+## Manual Setup via API
+
+If you prefer to set up tables directly via API:
+
+1. **Start the application**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Navigate to setup page**:
+   ```
+   http://localhost:3000/admin/setup
+   ```
+   (You need to be logged in as a super admin)
+
+3. **Use API endpoint**:
+   ```bash
+   curl -X POST http://localhost:3000/api/db/create-tables
+   ```
+
+## Testing Email Functionality
+
+### Using Inbucket
+
+Supabase includes Inbucket, a service that captures all outgoing emails:
+
+1. Access Inbucket at http://127.0.0.1:54324
+2. All emails sent by your application will appear here
+3. You can view, inspect and delete test emails
+
+### Testing Password Reset Flow
+
+1. Navigate to `/auth/forgot-password`
+2. Enter a test email address
+3. Check Inbucket for the reset email
+4. Use the code or link to complete the password reset process
+
+## Troubleshooting Common Issues
+
+### Email Issues
+
+- **Problem**: Emails not appearing in Inbucket
+  **Solution**: Verify the SMTP settings and check that Inbucket service is running (`npx supabase status`)
+
+### Database Connection Issues
+
+- **Problem**: "Error connecting to database"
+  **Solution**: Ensure Supabase container is running and check database connection details
+
+### Migration Errors
+
+- **Problem**: "Error applying migration"
+  **Solution**: 
+  1. Check SQL syntax
+  2. Verify table doesn't already exist
+  3. Try resetting the database: `npx supabase db reset --force`
+
+### Authentication Issues
+
+- **Problem**: Password reset not working
+  **Solution**:
+  1. Check that verification tables exist
+  2. Verify email delivery in Inbucket
+  3. Confirm the reset code expiration time
+
+## Advanced Configuration
 
 ### Row-Level Security (RLS)
 
-Password reset verifications are protected by RLS:
+Row-Level Security is enabled on all tables. Here's how to configure policies:
 
 ```sql
--- Enable RLS
-ALTER TABLE public.password_reset_verifications ENABLE ROW LEVEL SECURITY;
-
--- Service role can do anything
-CREATE POLICY "Service role can manage all password reset verifications"
-  ON public.password_reset_verifications
-  FOR ALL TO service_role
-  USING (true);
-
--- Users can only see their own codes
-CREATE POLICY "Users can view their own password reset verifications"
-  ON public.password_reset_verifications
-  FOR SELECT
-  USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
-
--- Only the service role can create codes
-CREATE POLICY "Service role can insert password reset verifications"
-  ON public.password_reset_verifications
-  FOR INSERT
-  TO service_role
-  WITH CHECK (true);
+-- Example: Allow users to only see their own data
+CREATE POLICY "Users can view own data" 
+  ON my_table 
+  FOR SELECT 
+  USING (auth.uid() = user_id);
 ```
 
-## Troubleshooting
+### Supabase Edge Functions
 
-### Common Migration Issues
+For local testing of Edge Functions:
 
-1. **Duplicate Migration Keys**
-
-Error:
-```
-ERROR: duplicate key value violates unique constraint "schema_migrations_pkey"
-```
-
-Solution:
-- Delete the schema_migrations record:
-```sql
-DELETE FROM supabase_migrations.schema_migrations 
-WHERE name = 'problematic_migration_name';
-```
-- Then reset the database:
 ```bash
-npx supabase db reset
+npx supabase functions serve
 ```
 
-2. **Policy Creation Errors**
+### Seeding Test Data
 
-Error:
-```
-ERROR: policy already exists
-```
+To populate your local database with test data:
 
-Solution:
-- Use the DO/BEGIN/IF NOT EXISTS pattern shown above in all migrations
-- Or manually drop the policy before creating:
-```sql
-DROP POLICY IF EXISTS "Policy name" ON public.table_name;
-```
-
-3. **Syntax Errors in Functions**
-
-Error:
-```
-ERROR: syntax error at or near "NEW"
-```
-
-Solution:
-- For functions inside DO blocks, use double dollar signs to delimit nested functions:
-```sql
-DO $$
-BEGIN
-  CREATE OR REPLACE FUNCTION my_func() 
-  RETURNS TRIGGER AS $func$
-  BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-  END;
-  $func$ LANGUAGE plpgsql;
-END
-$$;
-```
-
-### Viewing Email Verifications
-
-For testing password reset emails:
-
-1. Start Supabase locally
-2. Access the Inbucket interface at http://127.0.0.1:54324
-3. Find emails sent to your test user's email
-
-### Manual Table Creation
-
-If migrations aren't working, use the API route or direct SQL:
-
-1. Using our API:
 ```bash
-curl -X POST http://localhost:3000/api/db/create-otp-table
+npx supabase db reset --seed-data
 ```
 
-2. Using direct SQL (if psql is installed):
+## Working with the Supabase Database Directly
+
+If you need to access the local PostgreSQL database directly:
+
 ```bash
-cat supabase/migrations/20240401000001_create_password_reset_verifications.sql | PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres
+npx supabase db connect
 ```
 
-3. Using Supabase Studio:
-- Open http://127.0.0.1:54323
-- Go to the SQL Editor
-- Copy-paste the migration SQL
-- Run the query
+This will open a psql connection to your local Supabase database where you can run SQL commands directly.
 
-## Best Practices
+## Conclusion
 
-1. **Always Use Idempotent Migrations**
-   - Use `IF NOT EXISTS` for all table and index creations
-   - Wrap policy creation in `DO/BEGIN/IF NOT EXISTS` blocks
-
-2. **Handle Policy Errors Gracefully**
-   - Policies can cause duplicate key errors
-   - Use check statements to prevent duplicate policies
-
-3. **Test Migrations Before Committing**
-   - Apply migrations to a clean local database
-   - Verify they can be applied multiple times without errors
-
-4. **Seed with Test Data**
-   - Create a seed file in `supabase/seed.sql` for testing
-   - Include test users with different roles
-
-5. **Use the Admin Setup UI**
-   - The `/admin/setup` page provides a user-friendly way to create necessary tables
-   - Only accessible to super_admin users
-
----
-
-By following these guidelines, you'll be able to work effectively with Supabase locally for development and testing, especially for the password reset functionality and other authentication features. 
+This guide covers the essentials for working with Supabase locally, particularly for the authentication and password reset functionality. For additional information, refer to the [Supabase documentation](https://supabase.com/docs) or the [project architecture document](./project-architecture.md). 

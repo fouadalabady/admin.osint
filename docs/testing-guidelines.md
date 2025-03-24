@@ -1,544 +1,417 @@
-# Testing Guidelines: Password Reset Flow
+# Testing Guidelines
 
-This document outlines testing procedures for the password reset flow in the OSINT Dashboard, covering unit tests, integration tests, and end-to-end tests.
+This document outlines the testing approach and best practices for the OSINT Dashboard & Agency Website project. Following these guidelines ensures consistent, high-quality code with proper test coverage.
 
-## Testing Environment Setup
+## Testing Philosophy
 
-### Local Testing Environment
+Our testing strategy is built on these principles:
 
-Before running tests, set up the local environment:
+1. **Test-Driven Development (TDD)** - Write tests before implementation when possible
+2. **Comprehensive Coverage** - Critical paths must have complete test coverage
+3. **Automated Testing** - Tests should run automatically in CI/CD pipelines
+4. **Realistic Testing** - Tests should simulate real-world usage scenarios
+5. **Security-First Testing** - Security implications must be tested for all features
 
-1. Start Supabase locally:
-   ```bash
-   npx supabase start
-   ```
+## Test Types
 
-2. Create necessary database tables:
-   ```bash
-   npx supabase db reset
-   ```
+### 1. Unit Tests
 
-3. Ensure test environment variables are set:
-   ```
-   TEST_USER_EMAIL=test@example.com
-   TEST_USER_PASSWORD=StrongPassword123!
-   ```
+Unit tests verify the functionality of individual components or functions in isolation.
 
-### Test Database Seeding
+**Tools:**
+- Jest
+- React Testing Library
 
-Seed the database with test users:
+**Guidelines:**
+- Test each component in isolation, mocking dependencies
+- Focus on testing component behavior, not implementation details
+- Coverage requirements: 80% for critical utility functions and components
 
-```typescript
-// scripts/seed-test-db.ts
-async function seedTestUsers() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  
-  // Create test user
-  const { data, error } = await supabase.auth.admin.createUser({
-    email: 'test@example.com',
-    password: 'StrongPassword123!',
-    email_confirm: true
-  });
-  
-  if (error) {
-    console.error('Error seeding test user:', error);
-    return;
-  }
-  
-  console.log('Test user created with ID:', data.user.id);
-}
-```
+**Example:**
 
-## Unit Tests
-
-### Testing Code Generation
-
-```typescript
-// utils/generateRandomCode.test.ts
-import { generateRandomCode } from '../lib/utils';
-
-describe('generateRandomCode', () => {
-  test('generates code of specified length', () => {
-    const code = generateRandomCode(6);
-    expect(code.length).toBe(6);
-  });
-  
-  test('generates only numeric characters', () => {
-    const code = generateRandomCode(10);
-    expect(/^\d+$/.test(code)).toBe(true);
-  });
-  
-  test('generates different codes on successive calls', () => {
-    const code1 = generateRandomCode();
-    const code2 = generateRandomCode();
-    expect(code1).not.toBe(code2);
-  });
-});
-```
-
-### Testing Email Validation
-
-```typescript
-// lib/validation.test.ts
-import { validateEmail } from '../lib/validation';
-
-describe('Email Validation', () => {
-  test('validates correct email formats', () => {
-    expect(validateEmail('user@example.com')).toBe(true);
-    expect(validateEmail('user.name+tag@example.co.uk')).toBe(true);
-  });
-  
-  test('rejects invalid email formats', () => {
-    expect(validateEmail('user@')).toBe(false);
-    expect(validateEmail('user@example')).toBe(false);
-    expect(validateEmail('@example.com')).toBe(false);
-    expect(validateEmail('user example.com')).toBe(false);
-  });
-});
-```
-
-### Testing Password Strength
-
-```typescript
-// utils/passwordStrength.test.ts
-import { checkPasswordStrength } from '../lib/passwordStrength';
-
-describe('Password Strength Checker', () => {
-  test('identifies weak passwords', () => {
-    expect(checkPasswordStrength('12345678')).toBe(0); // Very weak
-    expect(checkPasswordStrength('password')).toBe(0); // Very weak
-  });
-  
-  test('recognizes strong passwords', () => {
-    expect(checkPasswordStrength('C0mpl3x!P@ssw0rd')).toBeGreaterThanOrEqual(3);
-  });
-  
-  test('handles empty input', () => {
-    expect(checkPasswordStrength('')).toBe(0);
-  });
-});
-```
-
-## Integration Tests
-
-### Testing Reset Password API
-
-```typescript
-// app/api/auth/reset-password/route.test.ts
-import { POST } from '../app/api/auth/reset-password/route';
-import { createMockRequest } from '../test/helpers';
-
-// Mock Supabase client
-jest.mock('../lib/supabase', () => ({
-  createServerSupabaseClient: jest.fn(() => ({
-    auth: {
-      resetPasswordForEmail: jest.fn().mockResolvedValue({ error: null })
-    },
-    from: jest.fn().mockReturnValue({
-      insert: jest.fn().mockResolvedValue({ error: null })
-    })
-  }))
-}));
-
-describe('Reset Password API', () => {
-  test('returns 400 for invalid email', async () => {
-    const req = createMockRequest({ email: 'invalid-email' });
-    const response = await POST(req);
+```tsx
+// Component test example
+describe('PasswordField', () => {
+  it('should toggle password visibility when the toggle button is clicked', () => {
+    const { getByLabelText, getByRole } = render(<PasswordField label="Password" />);
+    const input = getByLabelText('Password') as HTMLInputElement;
+    const toggleButton = getByRole('button', { name: /toggle password visibility/i });
     
-    expect(response.status).toBe(400);
-    expect(await response.json()).toHaveProperty('error');
-  });
-  
-  test('returns 200 for valid email', async () => {
-    const req = createMockRequest({ email: 'test@example.com' });
-    const response = await POST(req);
+    // Initially password is hidden
+    expect(input.type).toBe('password');
     
-    expect(response.status).toBe(200);
-    expect(await response.json()).toHaveProperty('success', true);
+    // Click to show password
+    fireEvent.click(toggleButton);
+    expect(input.type).toBe('text');
+    
+    // Click to hide password again
+    fireEvent.click(toggleButton);
+    expect(input.type).toBe('password');
+  });
+});
+```
+
+### 2. Integration Tests
+
+Integration tests verify that different parts of the application work together as expected.
+
+**Tools:**
+- Jest
+- React Testing Library
+- MSW (Mock Service Worker) for API mocking
+
+**Guidelines:**
+- Test combinations of components and their interactions
+- Test data flow between components and API calls
+- Use realistic, representative data in tests
+
+**Example:**
+
+```tsx
+// Integration test example
+describe('ForgotPassword flow', () => {
+  beforeAll(() => {
+    // Setup MSW to intercept API calls
+    server.listen();
   });
   
-  test('handles Supabase error gracefully', async () => {
-    // Override mock to simulate error
-    const supabaseClientMock = require('../lib/supabase').createServerSupabaseClient;
-    supabaseClientMock.mockReturnValueOnce({
-      auth: {
-        resetPasswordForEmail: jest.fn().mockResolvedValue({ error: { message: 'Test error' } })
-      },
-      from: jest.fn().mockReturnValue({
-        insert: jest.fn().mockResolvedValue({ error: null })
+  afterEach(() => {
+    server.resetHandlers();
+  });
+  
+  afterAll(() => {
+    server.close();
+  });
+  
+  it('should submit email and show success message', async () => {
+    // Mock successful API response
+    server.use(
+      rest.post('/api/auth/reset-password', (req, res, ctx) => {
+        return res(ctx.json({ success: true }));
       })
-    });
-    
-    const req = createMockRequest({ email: 'test@example.com' });
-    const response = await POST(req);
-    
-    // Should still return 200 to prevent user enumeration
-    expect(response.status).toBe(200);
-  });
-});
-```
-
-### Testing Verification Code API
-
-```typescript
-// app/api/auth/verify-reset-code/route.test.ts
-import { POST } from '../app/api/auth/verify-reset-code/route';
-import { createMockRequest } from '../test/helpers';
-
-// Mock database responses
-jest.mock('../lib/supabase', () => ({
-  createServerSupabaseClient: jest.fn(() => ({
-    from: jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      gte: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockResolvedValue({
-        data: [
-          {
-            id: '123',
-            email: 'test@example.com',
-            code: '123456',
-            verified: false,
-            expires_at: new Date(Date.now() + 3600000).toISOString()
-          }
-        ],
-        error: null
-      }),
-      update: jest.fn().mockResolvedValue({ error: null })
-    }),
-    auth: {
-      admin: {
-        getUserByEmail: jest.fn().mockResolvedValue({ 
-          data: { user: { id: 'user-123' } },
-          error: null 
-        }),
-        updateUserById: jest.fn().mockResolvedValue({ error: null })
-      }
-    }
-  }))
-}));
-
-describe('Verify Reset Code API', () => {
-  test('returns 400 for missing parameters', async () => {
-    const req = createMockRequest({ email: 'test@example.com' }); // Missing code and password
-    const response = await POST(req);
-    
-    expect(response.status).toBe(400);
-  });
-  
-  test('returns 400 for invalid code', async () => {
-    // Override mock for invalid code
-    const supabaseClientMock = require('../lib/supabase').createServerSupabaseClient;
-    supabaseClientMock.mockReturnValueOnce({
-      from: jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        gte: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue({
-          data: [], // No verification found
-          error: null
-        })
-      })
-    });
-    
-    const req = createMockRequest({ 
-      email: 'test@example.com',
-      code: '999999',
-      password: 'NewPassword123!'
-    });
-    
-    const response = await POST(req);
-    expect(response.status).toBe(400);
-  });
-  
-  test('returns 200 for successful verification', async () => {
-    const req = createMockRequest({ 
-      email: 'test@example.com',
-      code: '123456',
-      password: 'NewPassword123!'
-    });
-    
-    const response = await POST(req);
-    expect(response.status).toBe(200);
-    expect(await response.json()).toHaveProperty('success', true);
-  });
-});
-```
-
-## End-to-End Tests
-
-For end-to-end testing, use Playwright or Cypress to automate the complete user flow.
-
-### Testing the Forgot Password Page
-
-```typescript
-// e2e/forgot-password.spec.ts
-import { test, expect } from '@playwright/test';
-
-test.describe('Forgot Password Flow', () => {
-  test('should show success message after submitting email', async ({ page }) => {
-    await page.goto('/auth/forgot-password');
-    
-    // Fill in email
-    await page.fill('[name="email"]', 'test@example.com');
-    
-    // Submit form
-    await page.click('button[type="submit"]');
-    
-    // Check for success message
-    await expect(page.locator('.success-message')).toBeVisible();
-    await expect(page.locator('.success-message')).toContainText('instructions');
-  });
-  
-  test('should validate email format', async ({ page }) => {
-    await page.goto('/auth/forgot-password');
-    
-    // Fill invalid email
-    await page.fill('[name="email"]', 'invalid-email');
-    
-    // Submit form
-    await page.click('button[type="submit"]');
-    
-    // Check for validation error
-    await expect(page.locator('.error-message')).toBeVisible();
-    await expect(page.locator('.error-message')).toContainText('valid email');
-  });
-});
-```
-
-### Testing the Reset Password Page
-
-```typescript
-// e2e/reset-password.spec.ts
-import { test, expect } from '@playwright/test';
-
-test.describe('Reset Password Page', () => {
-  test('should allow resetting password with code', async ({ page }) => {
-    // Mock API responses for testing
-    await page.route('**/api/auth/verify-reset-code', route => {
-      route.fulfill({
-        status: 200,
-        body: JSON.stringify({ success: true })
-      });
-    });
-    
-    await page.goto('/auth/reset-password');
-    
-    // Switch to code-based tab
-    await page.click('#code-tab');
-    
-    // Fill form
-    await page.fill('[name="email"]', 'test@example.com');
-    await page.fill('[name="code"]', '123456');
-    await page.fill('[name="password"]', 'NewStrongP@ssw0rd');
-    await page.fill('[name="confirmPassword"]', 'NewStrongP@ssw0rd');
-    
-    // Submit form
-    await page.click('button[type="submit"]');
-    
-    // Check for success message
-    await expect(page.locator('.success-message')).toBeVisible();
-    await expect(page.locator('.success-message')).toContainText('successfully reset');
-    
-    // Should redirect to login page after success
-    await expect(page).toHaveURL(/.*\/auth\/login/);
-  });
-  
-  test('should validate password strength', async ({ page }) => {
-    await page.goto('/auth/reset-password');
-    
-    // Switch to code-based tab
-    await page.click('#code-tab');
-    
-    // Fill form with weak password
-    await page.fill('[name="email"]', 'test@example.com');
-    await page.fill('[name="code"]', '123456');
-    await page.fill('[name="password"]', 'password123');
-    await page.fill('[name="confirmPassword"]', 'password123');
-    
-    // Submit form
-    await page.click('button[type="submit"]');
-    
-    // Check for validation error
-    await expect(page.locator('.error-message')).toBeVisible();
-    await expect(page.locator('.error-message')).toContainText('stronger password');
-  });
-  
-  test('should validate password match', async ({ page }) => {
-    await page.goto('/auth/reset-password');
-    
-    // Switch to code-based tab
-    await page.click('#code-tab');
-    
-    // Fill form with mismatched passwords
-    await page.fill('[name="email"]', 'test@example.com');
-    await page.fill('[name="code"]', '123456');
-    await page.fill('[name="password"]', 'StrongP@ssw0rd1');
-    await page.fill('[name="confirmPassword"]', 'StrongP@ssw0rd2');
-    
-    // Submit form
-    await page.click('button[type="submit"]');
-    
-    // Check for validation error
-    await expect(page.locator('.error-message')).toBeVisible();
-    await expect(page.locator('.error-message')).toContainText('match');
-  });
-});
-```
-
-## Performance Testing
-
-### API Response Times
-
-Monitor API response times to ensure they meet performance targets:
-
-```typescript
-// performance/api-performance.test.ts
-import { POST } from '../app/api/auth/reset-password/route';
-import { createMockRequest } from '../test/helpers';
-
-describe('API Performance', () => {
-  test('reset password API responds within 500ms', async () => {
-    const req = createMockRequest({ email: 'test@example.com' });
-    
-    const startTime = performance.now();
-    await POST(req);
-    const endTime = performance.now();
-    
-    const responseTime = endTime - startTime;
-    expect(responseTime).toBeLessThan(500);
-  });
-});
-```
-
-## Security Testing
-
-### Testing Rate Limiting
-
-```typescript
-// security/rate-limiting.test.ts
-import { POST } from '../app/api/auth/reset-password/route';
-import { createMockRequest } from '../test/helpers';
-
-describe('Rate Limiting', () => {
-  test('blocks excessive requests from same IP', async () => {
-    const req = createMockRequest(
-      { email: 'test@example.com' },
-      { headers: { 'x-forwarded-for': '192.168.1.1' } }
     );
     
-    // Make initial requests
-    for (let i = 0; i < 5; i++) {
-      await POST(req);
-    }
+    const { getByLabelText, getByRole, findByText } = render(<ForgotPasswordPage />);
     
-    // This request should be rate limited
-    const response = await POST(req);
-    expect(response.status).toBe(429);
+    // Fill and submit form
+    fireEvent.change(getByLabelText('Email'), { target: { value: 'test@example.com' } });
+    fireEvent.click(getByRole('button', { name: /reset password/i }));
+    
+    // Verify success message appears
+    const successMessage = await findByText(/check your email/i);
+    expect(successMessage).toBeInTheDocument();
   });
 });
 ```
 
-## Test Reporting and CI/CD Integration
+### 3. End-to-End (E2E) Tests
 
-Configure Jest to generate coverage reports:
+E2E tests verify the complete user journey through the application.
 
-```json
-// jest.config.js
-module.exports = {
-  collectCoverage: true,
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
-    }
-  }
-}
-```
+**Tools:**
+- Cypress
+- Playwright
 
-## Manual Testing Checklist
+**Guidelines:**
+- Focus on critical user flows (login, reset password, form submissions)
+- Test on multiple browsers and screen sizes
+- Use a realistic test environment with seeded data
 
-For thorough testing, follow this manual testing checklist:
-
-1. **Forgot Password Flow**
-   - [ ] Submit valid email address
-   - [ ] Submit invalid email format
-   - [ ] Submit non-existent email address
-   - [ ] Check for consistent success messaging
-
-2. **Email Receipt**
-   - [ ] Verify Supabase email delivery
-   - [ ] Verify SMTP fallback email delivery
-   - [ ] Check email content and formatting
-   - [ ] Verify reset link functionality
-   - [ ] Verify code readability
-
-3. **Reset Password Page**
-   - [ ] Test URL token verification
-   - [ ] Test manual code entry
-   - [ ] Test password strength feedback
-   - [ ] Test password matching validation
-   - [ ] Test successful submission
-
-4. **Security Checks**
-   - [ ] Test expired tokens/codes
-   - [ ] Test used tokens/codes (prevent reuse)
-   - [ ] Test rate limiting (multiple attempts)
-   - [ ] Test SQL injection in input fields
-
-5. **Accessibility**
-   - [ ] Test keyboard navigation
-   - [ ] Test screen reader compatibility
-   - [ ] Test color contrast
-   - [ ] Test with zoom/magnification
-
-## Appendix: Test Helpers
-
-### Mock Request Creator
+**Example:**
 
 ```typescript
-// test/helpers.ts
-import { NextRequest } from 'next/server';
-
-export function createMockRequest(body: any, options = {}) {
-  const { headers = {} } = options;
-  
-  return new NextRequest('http://localhost:3000', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: new Headers({
-      'Content-Type': 'application/json',
-      ...headers
-    })
-  });
-}
-```
-
-### Test Database Utilities
-
-```typescript
-// test/db-helpers.ts
-import { createClient } from '@supabase/supabase-js';
-
-export async function cleanupTestData() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  
-  // Clean up test verification codes
-  await supabase
-    .from('password_reset_verifications')
-    .delete()
-    .eq('email', 'test@example.com');
+// Cypress E2E test example
+describe('Password Reset Flow', () => {
+  it('should allow a user to reset their password', () => {
+    // Visit forgot password page
+    cy.visit('/auth/forgot-password');
     
-  // Other cleanup as needed
-} 
+    // Submit email
+    cy.findByLabelText('Email').type('test@example.com');
+    cy.findByRole('button', { name: /reset password/i }).click();
+    
+    // Verify success page
+    cy.findByText(/check your email/i).should('be.visible');
+    
+    // Simulate clicking email link (in a real test, we'd intercept emails)
+    cy.visit('/auth/reset-password?token=test-token');
+    
+    // Enter new password
+    cy.findByLabelText('New Password').type('NewSecurePassword123!');
+    cy.findByLabelText('Confirm Password').type('NewSecurePassword123!');
+    cy.findByRole('button', { name: /update password/i }).click();
+    
+    // Verify success and redirection
+    cy.url().should('include', '/auth/login');
+    cy.findByText(/password has been reset/i).should('be.visible');
+  });
+});
+```
+
+### 4. API Tests
+
+API tests verify that the API endpoints work correctly.
+
+**Tools:**
+- Jest
+- Supertest
+
+**Guidelines:**
+- Test all API endpoints for success and error cases
+- Verify request validation, authentication, and authorization
+- Test rate limiting and security features
+
+**Example:**
+
+```typescript
+// API test example
+describe('POST /api/auth/reset-password', () => {
+  it('should return 200 when a valid email is provided', async () => {
+    const response = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ email: 'test@example.com' })
+      .set('Accept', 'application/json');
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('success', true);
+  });
+  
+  it('should return 400 for invalid email format', async () => {
+    const response = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ email: 'invalid-email' })
+      .set('Accept', 'application/json');
+    
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty('error');
+  });
+  
+  it('should be rate limited after multiple attempts', async () => {
+    // First 5 requests should succeed
+    for (let i = 0; i < 5; i++) {
+      const response = await request(app)
+        .post('/api/auth/reset-password')
+        .send({ email: `test${i}@example.com` })
+        .set('X-Forwarded-For', '192.168.1.1') // Simulate same IP
+        .set('Accept', 'application/json');
+      
+      expect(response.status).toBe(200);
+    }
+    
+    // 6th request should be rate limited
+    const response = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ email: 'test6@example.com' })
+      .set('X-Forwarded-For', '192.168.1.1')
+      .set('Accept', 'application/json');
+    
+    expect(response.status).toBe(429); // Too Many Requests
+  });
+});
+```
+
+### 5. Security Tests
+
+Security tests verify that the application is secure against common vulnerabilities.
+
+**Tools:**
+- OWASP ZAP
+- Snyk
+
+**Guidelines:**
+- Test for common vulnerabilities (XSS, CSRF, SQL injection)
+- Verify proper implementation of authentication and authorization
+- Test security headers and configurations
+
+**Example:**
+
+```typescript
+// Security test example for CSRF protection
+describe('CSRF Protection', () => {
+  it('should reject API requests without CSRF token', async () => {
+    // Login first to get a session
+    await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'test@example.com', password: 'password123' })
+      .set('Accept', 'application/json');
+    
+    // Attempt to make a POST request without CSRF token
+    const response = await request(app)
+      .post('/api/user/profile')
+      .send({ name: 'Updated Name' })
+      .set('Accept', 'application/json');
+    
+    // Should be rejected with 403 Forbidden
+    expect(response.status).toBe(403);
+    expect(response.body).toHaveProperty('error', 'Invalid CSRF token');
+  });
+});
+```
+
+## Test Environment Setup
+
+### Local Testing
+
+1. **Setup local environment**:
+   ```bash
+   npm install
+   cp .env.example .env.test.local
+   # Configure test-specific environment variables
+   ```
+
+2. **Run tests**:
+   ```bash
+   # Run unit and integration tests
+   npm test
+   
+   # Run with coverage report
+   npm test -- --coverage
+   
+   # Run E2E tests
+   npm run test:e2e
+   ```
+
+### CI/CD Testing
+
+Tests are automatically run in GitHub Actions:
+
+1. **Pull Request Tests**:
+   - All tests run on every pull request
+   - Coverage reports generated
+   - E2E tests run against a temporary environment
+
+2. **Main Branch Tests**:
+   - All tests run on merges to main
+   - Security scans performed
+   - Performance tests run
+
+## Testing Best Practices
+
+### 1. Writing Effective Tests
+
+- Write clear test descriptions that explain what is being tested
+- Follow the Arrange-Act-Assert (AAA) pattern
+- One assertion per test when possible
+- Keep tests independent and isolated
+- Use appropriate mocks and stubs
+
+### 2. Testing Authentication and Authorization
+
+- Test login, logout, and registration flows
+- Verify role-based access controls
+- Test authentication token handling
+- Test session management and timeouts
+
+### 3. Testing i18n and Localization
+
+- Test UI with different languages
+- Verify RTL layout rendering for Arabic
+- Test date, number, and currency formatting
+
+### 4. Testing Accessibility
+
+- Verify ARIA attributes
+- Test keyboard navigation
+- Check color contrast and screen reader compatibility
+
+### 5. Performance Testing
+
+- Test application loading times
+- Verify efficient API response times
+- Test with simulated slow network conditions
+
+## Common Testing Patterns
+
+### Testing Form Submissions
+
+```tsx
+// Form submission test pattern
+it('should submit the form with valid data', async () => {
+  // Render form
+  const { getByLabelText, getByRole } = render(<MyForm onSubmit={mockSubmit} />);
+  
+  // Fill form fields
+  fireEvent.change(getByLabelText('Name'), { target: { value: 'Test User' } });
+  fireEvent.change(getByLabelText('Email'), { target: { value: 'test@example.com' } });
+  
+  // Submit form
+  fireEvent.click(getByRole('button', { name: /submit/i }));
+  
+  // Verify submission
+  expect(mockSubmit).toHaveBeenCalledWith({
+    name: 'Test User',
+    email: 'test@example.com'
+  });
+});
+```
+
+### Testing Error Handling
+
+```tsx
+// Error handling test pattern
+it('should display validation errors', async () => {
+  // Render form
+  const { getByLabelText, getByRole, findByText } = render(<MyForm />);
+  
+  // Submit without filling required fields
+  fireEvent.click(getByRole('button', { name: /submit/i }));
+  
+  // Verify error messages
+  expect(await findByText(/name is required/i)).toBeInTheDocument();
+  expect(await findByText(/email is required/i)).toBeInTheDocument();
+});
+```
+
+### Testing Async Operations
+
+```tsx
+// Async operation test pattern
+it('should load and display data', async () => {
+  // Mock API response
+  mockAxios.get.mockResolvedValueOnce({
+    data: { users: [{ id: 1, name: 'Test User' }] }
+  });
+  
+  // Render component
+  const { findByText } = render(<UserList />);
+  
+  // Verify loading state
+  expect(screen.getByText(/loading/i)).toBeInTheDocument();
+  
+  // Verify data appears
+  expect(await findByText('Test User')).toBeInTheDocument();
+  
+  // Verify API was called correctly
+  expect(mockAxios.get).toHaveBeenCalledWith('/api/users');
+});
+```
+
+## Test Documentation
+
+Each test file should include:
+
+1. Brief description of what's being tested
+2. Test coverage expectations
+3. Any special setup or considerations
+
+Example test header:
+
+```typescript
+/**
+ * Password Reset API Tests
+ * 
+ * Tests the password reset API endpoints for:
+ * - Request password reset
+ * - Verify reset codes
+ * - Update password
+ * 
+ * Expected coverage: 100% of API functionality
+ * 
+ * Note: These tests require a running test database with proper
+ * migration setup. The tests will create and verify test users.
+ */
+```
+
+## Conclusion
+
+Following these testing guidelines will ensure a robust, reliable application with high-quality code. Tests should evolve with the application, and new features should always include corresponding test coverage.

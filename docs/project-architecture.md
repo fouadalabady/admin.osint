@@ -1,223 +1,195 @@
-# Project Architecture: Password Reset Flow
+# Project Architecture
 
-This document outlines the architecture of the password reset system in the OSINT Dashboard, particularly focusing on how it integrates with Supabase locally.
+This document outlines the architecture of the OSINT Dashboard & Agency Website project, detailing key components, their interactions, and the technologies used.
 
-## Architecture Overview
+## System Overview
 
-The password reset system uses a dual-delivery approach with both Supabase Auth and a custom SMTP fallback to ensure reliability. It's structured around these key components:
+The project is a headless admin dashboard and agency website built with modern web technologies. It consists of:
 
-1. **Database Storage** - Password reset verification codes
-2. **API Endpoints** - For requesting and verifying reset codes
-3. **UI Components** - User-facing reset interfaces
-4. **Email Delivery** - Dual-channel notification system
+1. **Public-facing Agency Website** - Marketing site with service pages, blog, and lead generation forms
+2. **Admin Dashboard** - Secure internal tool for content management and administration
+3. **API Layer** - RESTful and GraphQL endpoints for data operations
+4. **Authentication System** - Secure user management with role-based access
+5. **Database Layer** - Supabase PostgreSQL for data persistence
+
+## Tech Stack
+
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **Frontend Framework** | Next.js 14+ | Server-side rendering, routing, API routes |
+| **UI Components** | shadcn/ui, Radix UI | Accessible, customizable components |
+| **State Management** | React Context, TanStack Query | Global state and data fetching |
+| **Database** | Supabase (PostgreSQL) | Data storage, real-time subscriptions |
+| **Authentication** | NextAuth.js, Supabase Auth | User management, session handling |
+| **Styling** | Tailwind CSS | Utility-first styling |
+| **Localization** | next-intl, i18n routing | Multi-language support |
+| **Forms** | React Hook Form, Zod | Form handling and validation |
+| **API** | Next.js API Routes, REST | Data operations |
+| **Security** | reCAPTCHA v3, HTTPS, CSRF | Anti-bot, secure communications |
+| **Deployment** | Coolify | Continuous deployment |
+
+## Application Structure
+
+```
+/
+├── app/                    # Next.js App Router
+│   ├── [locale]/           # i18n routes
+│   │   ├── admin/          # Admin dashboard routes
+│   │   ├── auth/           # Authentication routes
+│   │   ├── blog/           # Blog routes
+│   │   └── (site)/         # Public site routes
+│   ├── api/                # API routes
+│   │   ├── auth/           # Auth-related endpoints
+│   │   ├── blog/           # Blog content endpoints
+│   │   └── webhooks/       # External service webhooks
+├── components/             # Shared React components
+│   ├── admin/              # Admin-specific components
+│   ├── auth/               # Authentication components
+│   ├── blog/               # Blog-specific components
+│   ├── forms/              # Form components
+│   ├── layout/             # Layout components
+│   └── ui/                 # UI components (shadcn)
+├── config/                 # Configuration files
+├── db/                     # Database migrations and schemas
+├── hooks/                  # Custom React hooks
+├── lib/                    # Utility functions and shared logic
+│   ├── auth/               # Authentication utilities
+│   ├── api/                # API utilities
+│   ├── supabase/           # Supabase client and helpers
+│   └── validation/         # Zod schemas
+├── locales/                # Translation files
+├── public/                 # Static assets
+└── styles/                 # Global styles
+```
+
+## Key Components and Interactions
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    User->>Frontend: Login Request
+    Frontend->>API: Authenticate (credentials)
+    API->>NextAuth: Verify credentials
+    NextAuth->>Supabase: Query user data
+    Supabase-->>NextAuth: User data
+    NextAuth-->>API: Session token
+    API-->>Frontend: Session & CSRF token
+    Frontend->>User: Redirect to dashboard
+```
+
+### Content Management Flow
+
+```mermaid
+sequenceDiagram
+    Admin->>Dashboard: Create/Edit content
+    Dashboard->>API: Submit content
+    API->>Middleware: Validate request
+    Middleware->>RoleGuard: Check permissions
+    RoleGuard-->>API: Authorization result
+    API->>Database: Store content
+    Database-->>API: Success/Failure
+    API-->>Dashboard: Response
+    Dashboard-->>Admin: Feedback
+```
+
+### Public Site Data Flow
+
+```mermaid
+sequenceDiagram
+    User->>Frontend: Visit page
+    Frontend->>API: Request data
+    API->>Database: Query content
+    Database-->>API: Content data
+    API-->>Frontend: JSON response
+    Frontend->>User: Render page
+```
 
 ## Database Schema
 
-### password_reset_verifications Table
+The database uses a normalized schema with the following core tables:
 
-```
-┌─────────────┬─────────────┬──────────────────────────────┐
-│ Column      │ Type        │ Description                  │
-├─────────────┼─────────────┼──────────────────────────────┤
-│ id          │ UUID        │ Primary key                  │
-│ email       │ TEXT        │ User's email address         │
-│ code        │ TEXT        │ Verification code            │
-│ type        │ TEXT        │ Purpose (e.g. password_reset)│
-│ verified    │ BOOLEAN     │ Whether code has been used   │
-│ created_at  │ TIMESTAMPTZ │ Creation timestamp           │
-│ expires_at  │ TIMESTAMPTZ │ Expiration timestamp         │
-└─────────────┴─────────────┴──────────────────────────────┘
-```
+- **users**: User accounts and authentication data
+- **profiles**: Extended user profile information
+- **roles**: User role definitions for RBAC
+- **user_roles**: Junction table relating users to roles
+- **blog_posts**: Blog content with metadata
+- **blog_categories**: Categories for blog posts
+- **blog_tags**: Tags for blog posts
+- **forms_submissions**: Lead generation form submissions
+- **password_reset_verifications**: Password reset tokens and verification
+- **otp_verifications**: One-time password verification records
+- **security_logs**: Audit logging for security events
 
-**Unique Constraint**: `(email, code, type, verified)` ensures no duplicate active codes.
+## Security Architecture
 
-## Component Diagram
+Security is implemented across multiple layers:
 
-```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│                 │      │                 │      │                 │
-│  Forgot         │      │  Password       │      │  Reset          │
-│  Password Page  │─────▶│  Reset API      │─────▶│  Password Page  │
-│                 │      │                 │      │                 │
-└─────────────────┘      └─────────────────┘      └─────────────────┘
-         │                        │                        │
-         │                        ▼                        │
-         │               ┌─────────────────┐              │
-         │               │                 │              │
-         └──────────────▶│  Supabase DB    │◀─────────────┘
-                         │                 │
-                         └─────────────────┘
-                                 │
-                                 ▼
-                         ┌─────────────────┐
-                         │                 │
-                         │  Email Delivery │
-                         │  (Dual-channel) │
-                         │                 │
-                         └─────────────────┘
-```
+1. **Network Layer**: HTTPS, secure headers
+2. **Application Layer**: Input validation, CSRF protection
+3. **Authentication Layer**: JWT, session management, MFA
+4. **Authorization Layer**: RBAC, row-level security
+5. **Database Layer**: Parameterized queries, encryption at rest
 
-## Password Reset Flow
+For detailed security information, see the [Security Model](./security-model.md) document.
 
-### 1. Request Phase
+## i18n Architecture
 
-When a user requests a password reset:
+The application supports multiple languages through:
 
-```mermaid
-sequenceDiagram
-    User->>ForgotPasswordPage: Enters email address
-    ForgotPasswordPage->>ResetPasswordAPI: POST /api/auth/reset-password
-    ResetPasswordAPI->>SupabaseDB: Store verification code
-    ResetPasswordAPI->>SupabaseAuth: Try reset via Supabase
-    alt Supabase Email Success
-        SupabaseAuth->>User: Send reset email with link
-    else Supabase Email Fails
-        ResetPasswordAPI->>SMTPFallback: Send email with code
-        SMTPFallback->>User: Send reset email with code
-    end
-```
+- Locale-based routing
+- Runtime message translation with `next-intl`
+- RTL layout support for Arabic
+- Translation files stored in JSON format in `/locales`
+- Server and client components translation support
 
-**Code Flow:**
-1. User submits email on `/auth/forgot-password`
-2. Request sent to `app/api/auth/reset-password/route.ts`
-3. API generates a random 6-digit code
-4. Code stored in `password_reset_verifications` table
-5. Primary attempt: Supabase Auth's `resetPasswordForEmail`
-6. Fallback: Custom SMTP email with verification code
+## Deployment Architecture
 
-### 2. Verification Phase
+The application is deployed using a CI/CD pipeline:
 
-When a user resets their password:
+1. GitHub Actions for CI (tests, linting)
+2. Automated deployment to Coolify
+3. Environment-specific configurations
+4. Database migrations applied automatically
+5. Zero-downtime deployments
 
-```mermaid
-sequenceDiagram
-    alt Link-based Reset
-        User->>ResetPasswordPage: Click link from email
-        ResetPasswordPage->>SupabaseAuth: Verify token from URL
-        SupabaseAuth->>ResetPasswordPage: Token verified
-    else Code-based Reset
-        User->>ResetPasswordPage: Enter code from email
-        ResetPasswordPage->>VerifyResetCodeAPI: POST /api/auth/verify-reset-code
-        VerifyResetCodeAPI->>SupabaseDB: Verify code is valid
-        VerifyResetCodeAPI->>SupabaseAuth: Update user password
-        VerifyResetCodeAPI->>SupabaseDB: Mark code as verified
-    end
-    ResetPasswordPage->>User: Show success message
-```
+## Performance Considerations
 
-**Code Flow:**
-1. User arrives at `/auth/reset-password` with either:
-   - PKCE token from Supabase Auth link
-   - Verification code from email
-2. For code-based reset:
-   - Request sent to `app/api/auth/verify-reset-code/route.ts`
-   - API verifies code against `password_reset_verifications` table
-   - API uses Supabase Admin API to update password
-   - Verification record marked as used
+The architecture prioritizes performance through:
 
-## Working with Local Supabase
+- Server components for reduced client JavaScript
+- Static generation where possible
+- Edge functions for dynamic but fast APIs
+- Optimized bundle sizes with code-splitting
+- Image optimization with Next.js Image component
+- Efficient database queries with proper indexing
 
-### Mail Testing Environment
+## Extensibility
 
-For local development, the Supabase Inbucket service captures all emails sent through either method:
+The system is designed for extensibility:
 
-1. Access Inbucket at http://127.0.0.1:54324
-2. All emails sent by Supabase Auth or SMTP will appear here
+- Modular component architecture
+- Pluggable authentication providers
+- Extensible API using middleware pattern
+- Clear separation of concerns
+- Standardized state management patterns
 
-### Database Setup
+## Monitoring and Observability
 
-To set up the database locally:
+The application includes:
 
-1. Navigate to `/admin/setup` with super admin access
-2. Use the "Set up OTP Table" button to create the necessary table
-3. Alternatively, use SQL migrations:
-   ```bash
-   npx supabase db reset
-   ```
+- Structured logging for all operations
+- Error tracking integration
+- Performance monitoring
+- User activity analytics
+- Security audit logging
 
-### Custom API for Direct Table Creation
+## Future Architecture Considerations
 
-The application includes an API endpoint to create the necessary tables directly:
+Planned architectural enhancements:
 
-```typescript
-// app/api/db/create-otp-table/route.ts
-export async function POST() {
-  try {
-    const supabase = createServerSupabaseClient();
-    const { error } = await supabase.rpc('exec_sql', { sql: createTableSQL });
-    // ...
-  } catch (error) {
-    // ...
-  }
-}
-```
-
-This endpoint can be accessed via:
-```bash
-curl -X POST http://localhost:3000/api/db/create-otp-table
-```
-
-## Error Handling & Edge Cases
-
-The system handles several edge cases:
-
-1. **Non-existent user email**
-   - System still sends "reset instructions sent" message for security
-   - No actual code is stored or email sent
-
-2. **Expired verification codes**
-   - Codes expire after 1 hour (`expires_at` field)
-   - User must request a new code
-
-3. **Multiple reset requests**
-   - Each request generates a new valid code
-   - Old codes remain valid until expiration
-
-4. **Email delivery failures**
-   - Dual delivery system increases reliability
-   - Supabase Auth handles primary delivery
-   - Custom SMTP provides fallback
-
-## Security Considerations
-
-1. **Rate limiting**
-   - API endpoints should be rate-limited in production
-
-2. **Safe error messages**
-   - Never reveal if an email exists in the system
-
-3. **Row-Level Security**
-   - Service role required for most operations
-   - Users can only see their own verification codes
-
-4. **Code expiration**
-   - All codes expire after 1 hour
-
-5. **One-time use**
-   - Codes are marked as verified after use
-
-## Testing the Flow
-
-1. Start Supabase locally:
-   ```bash
-   npx supabase start
-   ```
-
-2. Start the application:
-   ```bash
-   npm run dev
-   ```
-
-3. Navigate to the test page:
-   ```
-   http://localhost:3000/auth/forgot-password/test
-   ```
-
-4. Enter a valid email address
-
-5. Check Inbucket for the email:
-   ```
-   http://localhost:3001:54324
-   ```
-
-6. Complete the password reset process 
+- GraphQL API layer for more flexible data fetching
+- Microservices for specific high-load components
+- Enhanced real-time capabilities
+- AI-powered content recommendations
+- Edge computing for global performance 

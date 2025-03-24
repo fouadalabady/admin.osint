@@ -1,0 +1,48 @@
+name: CD
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Determine environment
+      id: env
+      run: |
+        if [[ $GITHUB_REF == refs/tags/v* ]]; then
+          echo "::set-output name=environment::production"
+        else
+          echo "::set-output name=environment::staging"
+        fi
+    
+    - name: Deploy to Coolify
+      env:
+        COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+        ENVIRONMENT: ${{ steps.env.outputs.environment }}
+      run: |
+        if [ "$ENVIRONMENT" = "production" ]; then
+          echo "Deploying to production..."
+          curl -X POST $COOLIFY_WEBHOOK_URL
+        else
+          echo "Deploying to staging..."
+          curl -X POST $COOLIFY_WEBHOOK_URL
+        fi 

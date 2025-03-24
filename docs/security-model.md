@@ -1,292 +1,141 @@
-# Security Model: Password Reset Flow
+# Security Model
 
-This document details the security model implemented for the password reset functionality in the OSINT Dashboard, highlighting security considerations and their implementation.
+This document outlines the security architecture and best practices implemented in the OSINT Dashboard & Agency Website project.
 
-## Security Principles
+## Authentication & Authorization
 
-The password reset flow is designed with these security principles:
+### Authentication Flow
 
-1. **Defense in Depth** - Multiple layers of security controls
-2. **Least Privilege** - Limited access to sensitive operations
-3. **Secure by Default** - Sensible security defaults
-4. **Fail Securely** - Errors don't compromise security
-5. **Audit Everything** - All sensitive actions are logged
+The project uses NextAuth.js integrated with Supabase for secure authentication:
 
-## Threat Model
+1. **User Registration**:
+   - Email/password registration with strong password requirements
+   - Email verification required before account activation
+   - Optional OTP verification for added security
+   - Google reCAPTCHA v3 to prevent bot registrations
 
-The password reset flow addresses these threats:
+2. **Login Process**:
+   - JWT-based authentication with secure token handling
+   - Token refresh mechanism for extended sessions
+   - Rate limiting to prevent brute force attacks
+   - Login activity logging for audit purposes
 
-| Threat | Mitigation |
-|--------|------------|
-| Account takeover via email interception | Time-limited tokens, one-time use codes |
-| Brute force attacks on reset codes | Rate limiting, secure random generation |
-| User enumeration | Consistent messaging regardless of account existence |
-| Denial of service | Rate limiting, database indices |
-| SQL injection | Parameterized queries, input validation |
+3. **Multi-Factor Authentication (MFA)**:
+   - Optional Time-based One-Time Password (TOTP)
+   - SMS or email-based verification codes
+   - Recovery codes for account access if primary methods are unavailable
 
-## Authentication Controls
+4. **Password Reset Flow**:
+   - Time-limited reset tokens
+   - One-time use tokens
+   - Email verification required for reset completion
+   - Activity logging for security monitoring
 
-### Verification Code Generation
+### Role-Based Access Control (RBAC)
 
-```typescript
-// Strong cryptographic randomness for code generation
-export function generateRandomCode(length: number = 6): string {
-  return Array.from(
-    { length },
-    () => Math.floor(Math.random() * 10).toString()
-  ).join("");
-}
-```
+We implement a comprehensive RBAC system with the following roles:
 
-Security features:
-- Uses cryptographically secure random number generation
-- Configurable length (defaults to 6 digits)
-- Purely numeric to facilitate entry on mobile devices while maintaining sufficient entropy
+1. **Super Admin**:
+   - Complete system access
+   - User management capabilities
+   - Configuration and settings access
+   - Analytics and reporting access
 
-### Code Storage & Validation
+2. **Editor**:
+   - Content creation and editing
+   - Limited user management
+   - No access to system configuration
 
-```sql
-CREATE TABLE IF NOT EXISTS password_reset_verifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email TEXT NOT NULL,
-  code TEXT NOT NULL,
-  type TEXT NOT NULL,
-  verified BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '1 hour',
-  CONSTRAINT unique_active_code UNIQUE (email, code, type, verified)
-);
-```
+3. **Contributor**:
+   - Content creation capabilities
+   - No publishing rights
+   - No user management access
 
-Security features:
-- UUID primary keys prevent enumeration
-- Verification status tracked to prevent reuse
-- Expiration timestamps enforce time limits
-- Unique constraint prevents duplicate active codes
+4. **Public User**:
+   - Access to public content only
+   - Cannot access admin dashboard
+
+## Data Protection
+
+### Data in Transit
+
+- All API communications use HTTPS/TLS 1.2+
+- Strict Transport Security (HSTS) enabled
+- Certificate pinning for API communications
+
+### Data at Rest
+
+- Sensitive data encrypted in the database
+- Password hashing using bcrypt with appropriate work factor
+- No sensitive data stored in logs or cache
+
+### Token Security
+
+- JWTs stored in HTTP-only cookies
+- CSRF protection implemented
+- Short expiration times with refresh token rotation
+- Session invalidation capabilities
 
 ## API Security
 
-### Input Validation
+- Rate limiting on all endpoints
+- Input validation using Zod
+- Parameterized queries for database operations
+- Proper error handling that doesn't expose sensitive information
 
-All API endpoints use Zod schema validation:
+## Infrastructure Security
 
-```typescript
-const ResetPasswordSchema = z.object({
-  email: z.string().email()
-});
+### Logging & Monitoring
 
-// Validate incoming request
-const result = ResetPasswordSchema.safeParse(await request.json());
-if (!result.success) {
-  return NextResponse.json(
-    { error: "Invalid request data" },
-    { status: 400 }
-  );
-}
-```
+- Structured logging with sensitive data redaction
+- Comprehensive audit logs for security-related events
+- Real-time alerts for suspicious activities
 
-Security features:
-- Schema-based validation prevents malformed input
-- Email format validation
-- Early rejection of invalid requests
+### Security Headers
 
-### Rate Limiting
+The application implements the following security headers:
 
-The system implements rate limiting on sensitive endpoints:
-
-```typescript
-// Check if rate limited
-const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
-const rateLimited = await isRateLimited(ipAddress, "reset_password", 5, 60 * 15);
-
-if (rateLimited) {
-  return NextResponse.json(
-    { error: "Too many requests. Please try again later." },
-    { status: 429 }
-  );
-}
-```
-
-Security features:
-- IP-based rate limiting
-- Configurable thresholds (attempts and time windows)
-- Operation-specific limits
-
-## Database Security
-
-### Row-Level Security (RLS)
-
-```sql
--- Enable row level security
-ALTER TABLE password_reset_verifications ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Service role can manage all verifications" 
-  ON password_reset_verifications 
-  USING (auth.role() = 'service_role');
-
--- Users can only see their own verifications
-CREATE POLICY "Users can view their own verifications" 
-  ON password_reset_verifications 
-  FOR SELECT 
-  USING (auth.jwt() ->> 'email' = email);
-```
-
-Security features:
-- Granular access control
-- Service role required for most operations
-- Users can only access their own data
-- Policies support the principle of least privilege
-
-### Secure Indices
-
-```sql
--- Create indices for faster lookups
-CREATE INDEX IF NOT EXISTS idx_verification_email ON password_reset_verifications (email);
-CREATE INDEX IF NOT EXISTS idx_verification_code ON password_reset_verifications (code);
-CREATE INDEX IF NOT EXISTS idx_verification_expires ON password_reset_verifications (expires_at);
-```
-
-Security features:
-- Prevents database performance degradation under load
-- Supports efficient querying to prevent timeout vulnerabilities
-
-## Email Security
-
-### Dual Delivery Mechanism
-
-```typescript
-// Try Supabase Auth method first
-const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(email, {
-  redirectTo: `${NEXTAUTH_URL}/auth/reset-password`,
-});
-
-// Fall back to SMTP if Supabase fails
-if (supabaseError) {
-  const { error: smtpError } = await sendResetPasswordEmail(email, code);
-  // Log errors but don't reveal to user
-}
-```
-
-Security features:
-- Redundant delivery paths increase reliability
-- Email content includes only what's necessary
-- No sensitive information in email body
-
-## User Interface Security
-
-### Consistent Messaging
-
-```typescript
-// Always return success regardless of whether email exists
-return NextResponse.json(
-  { success: true, message: "If your email is registered, you will receive reset instructions." },
-  { status: 200 }
-);
-```
-
-Security features:
-- Prevents user enumeration attacks
-- Consistent timing regardless of account existence
-
-### Password Policy Enforcement
-
-```tsx
-// Password strength validation
-const strengthResult = zxcvbn(password);
-const isStrong = strengthResult.score >= 3;
-
-if (!isStrong) {
-  setError("password", { message: "Please choose a stronger password" });
-  return;
-}
-```
-
-Security features:
-- zxcvbn library for password strength estimation
-- Visual feedback on password strength
-- Minimum entropy requirements
-
-## Secure Code Verification
-
-```typescript
-// Verify code validity
-const { data: verifications } = await supabase
-  .from("password_reset_verifications")
-  .select()
-  .eq("email", email)
-  .eq("code", code)
-  .eq("type", "password_reset")
-  .eq("verified", false)
-  .gte("expires_at", new Date().toISOString())
-  .order("created_at", { ascending: false })
-  .limit(1);
-
-// No valid code found
-if (!verifications || verifications.length === 0) {
-  return NextResponse.json(
-    { error: "Invalid or expired verification code" },
-    { status: 400 }
-  );
-}
-```
-
-Security features:
-- Multiple conditions for code validation
-- Checks for expiration
-- Verifies code hasn't been used
-- Matches against user email
-
-## Audit Logging
-
-```typescript
-// Log password reset attempt
-await supabase.from("security_logs").insert({
-  user_email: email,
-  action: "password_reset_attempt",
-  ip_address: ipAddress,
-  user_agent: request.headers.get("user-agent") || "unknown",
-  success: true
-});
-```
-
-Security features:
-- Comprehensive logging of security events
-- Capture of contextual information (IP, user agent)
-- Success/failure status tracking
-
-## Session Management
-
-After password reset, the system:
-
-1. Invalidates all existing sessions for the user
-2. Revokes refresh tokens
-3. Forces re-authentication with the new password
-
-```typescript
-// Invalidate all existing sessions
-await supabase.auth.admin.signOut(user.id, {
-  scope: "global"
-});
-```
+- Content-Security-Policy (CSP)
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection: 1; mode=block
+- Referrer-Policy: strict-origin-when-cross-origin
 
 ## Secure Development Practices
 
-1. **No hardcoded secrets** - All credentials and keys stored in environment variables
-2. **Parameterized queries** - No direct SQL string concatenation
-3. **Automated testing** - Security tests included in CI/CD pipeline
-4. **Regular dependency updates** - Keeps security patches current
-5. **Code reviews** - Security-focused review process
+- Dependency scanning in CI/CD pipeline
+- Regular security updates
+- Code reviews with security focus
+- Automated testing for security vulnerabilities
 
-## Compliance Considerations
+## Incident Response
 
-The password reset flow is designed to satisfy:
+In case of a security incident:
 
-1. **OWASP Top 10** - Specifically addressing authentication flaws
-2. **GDPR** - Supports right to access, right to be forgotten
-3. **Data minimization** - Only collects necessary information
-4. **NIST 800-63B** - Follows digital identity guidelines for password reset
+1. Immediately contain the breach
+2. Assess the impact and severity
+3. Document the incident details
+4. Implement necessary fixes
+5. Update security measures to prevent recurrence
+6. Notify affected users if necessary
 
-## Conclusion
+## Security Compliance
 
-The password reset security model implements multiple layers of protection against common attack vectors while maintaining usability. The core principles of defense in depth, least privilege, and secure defaults are applied throughout the implementation. 
+The application follows security best practices from:
+
+- OWASP Top 10
+- GDPR requirements
+- General web application security standards
+
+## Continuous Improvement
+
+Our security model undergoes regular reviews and updates based on:
+
+- Emerging threats and vulnerabilities
+- Industry best practices
+- Security testing and audit findings
+- User feedback and incident reports
+
+## Responsible Disclosure
+
+We encourage responsible disclosure of security vulnerabilities. Please report any security concerns to the project maintainers following our responsible disclosure policy. 
