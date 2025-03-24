@@ -3,7 +3,6 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 import { generateOTP, hashOTP, getOTPExpiry } from '@/lib/otp';
 import { sendEmail } from '@/lib/email';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { DatabaseError } from '@/types/auth';
 
@@ -41,6 +40,10 @@ async function tablesExist(supabase: SupabaseClient): Promise<TableCheckResult> 
     },
   };
 }
+
+// Add explicit runtime configuration
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
