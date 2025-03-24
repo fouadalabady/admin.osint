@@ -1,71 +1,66 @@
-name: CI
+name: CI - Quality & Build Checks
 
 on:
   push:
-    branches: [ develop, main ]
+    branches: [ develop, 'feature/**', 'bugfix/**', 'hotfix/**' ]
   pull_request:
-    branches: [ develop, main ]
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
-  lint:
-    name: Lint
+  code-quality:
+    name: Code Quality Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          
+      
       - name: Install Dependencies
         run: npm ci
-        
-      - name: Run ESLint
+      
+      - name: Lint Code
         run: npm run lint
         
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-          
-      - name: Install Dependencies
-        run: npm ci
+      - name: Type Check
+        run: npm run typecheck
         
-      - name: Run Tests
-        run: npm test
-        
+      - name: Check Formatting
+        run: npx prettier --check .
+  
   build:
-    name: Build
+    name: Build Check
+    needs: code-quality
     runs-on: ubuntu-latest
-    needs: [lint, test]
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          
+      
       - name: Install Dependencies
         run: npm ci
-        
+      
       - name: Build Next.js App
         run: npm run build
-        
+        env:
+          NEXT_PUBLIC_APP_ENV: 'ci'
+      
       - name: Archive Build Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
-          path: .next/
-          retention-days: 7 
+          name: next-build
+          path: .next
+          retention-days: 1 

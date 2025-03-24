@@ -9,16 +9,17 @@
     "start": "next start",
     "lint": "next lint",
     "setup-db": "curl -X GET http://localhost:3001/api/db/direct-setup",
-    "lint:fix": "next lint --fix || true",
+    "lint:fix": "next lint --fix",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit || true",
-    "prebuild": "npm run lint:fix || true",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "npm run lint:fix && npm run typecheck",
     "analyze": "ANALYZE=true next build",
     "test": "echo \"No tests found\" && exit 0",
     "clean": "rm -rf .next out",
-    "postinstall": "npx patch-package || true",
+    "postinstall": "npx patch-package",
     "build:clean": "npm run clean && npm run build",
-    "coolify-build": "NODE_ENV=production npm run build:clean"
+    "coolify-build": "NODE_ENV=production npm run build:clean",
+    "fix-code-quality": "npm run format && npm run lint:fix"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

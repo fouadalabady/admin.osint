@@ -23,8 +23,12 @@ ENV NODE_ENV production
 # Install additional build dependencies if needed
 RUN apk add --no-cache libc6-compat
 
-# Build the application - use our special build command that ensures success
-RUN npm run coolify-build
+# Run linting and type checking before build
+RUN npm run lint
+RUN npm run typecheck
+
+# Build the application with quality checks
+RUN npm run build
 
 # Stage 3: Runner (production image)
 FROM node:18-alpine AS runner

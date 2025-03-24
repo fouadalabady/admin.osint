@@ -3,7 +3,7 @@
   "buildPack": "nodejs",
   "nodeVersion": "18",
   "installCommand": "npm ci",
-  "buildCommand": "npm run coolify-build",
+  "buildCommand": "npm run build",
   "startCommand": "npm start",
   "environment": {
     "NODE_ENV": "production",

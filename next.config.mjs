@@ -1,15 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Handle ESLint during builds - for now we'll allow builds to succeed even with errors
-  // but we'll still show warnings for gradual improvement
+  // Handle ESLint during builds - enforce code quality
   eslint: {
-    ignoreDuringBuilds: true,
+    // Don't ignore during builds - we want to catch and fix errors
+    ignoreDuringBuilds: false,
     dirs: ['app', 'components', 'lib', 'middleware.ts'],
   },
   
-  // Handle TypeScript type checking - allow builds despite errors
+  // Handle TypeScript type checking - enforce proper typing
   typescript: {
-    ignoreBuildErrors: true,
+    // Don't ignore during builds - we want to catch and fix type errors
+    ignoreBuildErrors: false,
   },
   
   // Optimize production builds
