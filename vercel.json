@@ -3,22 +3,18 @@
   "framework": "nextjs",
   "buildCommand": "npm run vercel-build",
   "installCommand": "npm ci",
-  "regions": ["iad1"],
   "ignoreCommand": "npx --no -- turbo-ignore",
+  "regions": ["iad1"],
   "build": {
     "env": {
-      "NEXT_PUBLIC_SUPABASE_URL": "https://placeholder-url.supabase.co",
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "placeholder-key",
-      "SUPABASE_SERVICE_ROLE_KEY": "placeholder-service-key",
+      "NEXT_PUBLIC_SUPABASE_URL": "placeholder-value-replaced-at-runtime",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "placeholder-value-replaced-at-runtime",
+      "SUPABASE_SERVICE_ROLE_KEY": "placeholder-value-replaced-at-runtime",
       "NEXT_PUBLIC_VERCEL_ENV": "production",
-      "VERCEL_ENV": "build",
-      "NEXTAUTH_URL": "https://placeholder-auth-url.vercel.app",
-      "NEXTAUTH_SECRET": "placeholder-secret-key-for-build-only"
+      "VERCEL_ENV": "production",
+      "NEXTAUTH_URL": "placeholder-value-replaced-at-runtime",
+      "NEXTAUTH_SECRET": "placeholder-value-replaced-at-runtime"
     }
-  },
-  "github": {
-    "silent": true,
-    "autoJobCancelation": true
   },
   "headers": [
     {

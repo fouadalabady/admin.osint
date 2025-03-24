@@ -1,42 +1,119 @@
 # OSINT Dashboard
 
-Admin dashboard and agency website with headless CMS capabilities, built with Next.js, React, Supabase, and shadcn/ui.
+A secure, Next.js-powered dashboard for OSINT operations with admin capabilities, user management, and secure authentication.
 
 ## Features
 
-- **Landing Page & Service Pages**: Fully customizable content management
-- **Blog Module**: Create, edit, and publish blog posts with SEO management
-- **Lead Generation Forms**: 
-  - Schedule a Demo
-  - Contact Us
-  - Newsletter Subscription
-  - Join Our Team
-- **Multilingual Support**: Full localization for Arabic and English
-- **Role-Based Access Control**: Admin, Editor, and Contributor roles
-- **Secure Authentication**: Including password reset with fallback mechanisms
+- **Authentication**: Secure login system with role-based access control
+- **Admin Dashboard**: Manage users, content, and settings
+- **Responsive Design**: Mobile-friendly interface using shadcn/ui components
+- **i18n Support**: Multi-language support with next-intl
+- **API Integration**: Connect to external data sources
+- **Security**: Built-in security features including OTP verification
 
-## Technology Stack
+## Technologies
 
-- **Frontend**: Next.js 15 & React 19
+- **Frontend**: Next.js 15, React 19, Tailwind CSS
+- **Backend**: Supabase for database and authentication
+- **Deployment**: Vercel, Coolify
+- **Security**: NextAuth.js, OTP verification, RBAC
 - **UI Components**: shadcn/ui
-- **Authentication**: NextAuth.js with Supabase
-- **Database**: Supabase PostgreSQL
-- **Localization**: next-intl
-- **Form Handling**: React Hook Form with Zod validation
-- **Email**: SMTP service integration
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18.0.0 or higher
+- npm or yarn
+- Supabase account and project
+
+### Installation
+
 1. Clone the repository
-2. Install dependencies:
+   ```bash
+   git clone https://github.com/your-username/osintdash.git
+   cd osintdash
+   ```
+
+2. Install dependencies
    ```bash
    npm install
    ```
-3. Configure environment variables (see .env.example)
-4. Run development server:
+
+3. Create a `.env.local` file based on `.env.example`
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Update the environment variables in `.env.local` with your Supabase credentials and other settings
+
+5. Start the development server
    ```bash
    npm run dev
    ```
+
+## Deployment
+
+### Deploying to Vercel
+
+This project is optimized for deployment on Vercel. See [Vercel Deployment Guide](docs/vercel-deployment.md) for detailed instructions.
+
+Quick steps:
+
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in the Vercel dashboard
+3. Deploy from the Vercel dashboard or push to your main branch
+
+### Deploying to Coolify
+
+See our [documentation](docs/coolify-deployment.md) for instructions on deploying to Coolify.
+
+## Project Structure
+
+```
+osintdash/
+├── app/               # Next.js App Router
+├── components/        # React components
+├── lib/               # Utility functions and helpers
+├── public/            # Static assets
+├── styles/            # Global styles
+├── types/             # TypeScript type definitions
+├── .env.example       # Example environment variables
+└── docs/              # Documentation
+```
+
+## Environment Variables
+
+Key environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key |
+| `NEXTAUTH_URL` | Base URL for NextAuth |
+| `NEXTAUTH_SECRET` | Secret for NextAuth |
+
+See `.env.example` for a complete list.
+
+## Contributing
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- [Next.js](https://nextjs.org/)
+- [Supabase](https://supabase.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [NextAuth.js](https://next-auth.js.org/)
 
 ## Local Supabase Setup
 
@@ -65,6 +142,7 @@ This ensures reliability even when one delivery method fails. The system include
 - Password strength validation
 
 For detailed information about the password reset system, see:
+
 - [Password Reset Architecture](docs/project-architecture.md)
 - [Password Reset Security Model](docs/security-model.md)
 - [Password Reset Testing Guide](docs/testing-guidelines.md)
@@ -87,13 +165,16 @@ The user registration flow in this application includes email verification using
 If users encounter "Email not confirmed" errors despite completing verification:
 
 1. Check if the `verify-otp` endpoint correctly updates both:
+
    - `email_verified` flag in the `user_registration_requests` table
    - `email_confirm` flag in Supabase Auth via `supabase.auth.admin.updateUserById`
 
 2. Run the email confirmation fix script:
+
    ```
    node scripts/fix-all-user-emails.js
    ```
+
    This script identifies users who have verified their email through OTP but whose email confirmation status is not set in Supabase Auth.
 
 3. For individual users, you can use:
@@ -101,10 +182,6 @@ If users encounter "Email not confirmed" errors despite completing verification:
    node scripts/fix-new-user-accounts.js
    ```
    This script analyzes and fixes email confirmation issues for specific accounts.
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## Development
 
@@ -125,6 +202,23 @@ npm run dev:webpack
 # or
 yarn dev:webpack
 ```
+
+### Code Quality
+
+We maintain high code quality standards in this project. Before committing any code, please ensure:
+
+1. Your code follows the linting rules
+2. TypeScript types are properly used (avoid `any`)
+3. No unused variables or imports remain
+4. React hooks have proper dependency arrays
+
+Run the following to check and fix code quality issues:
+
+```bash
+npm run fix-code-quality
+```
+
+For detailed guidelines, see [Code Quality Guidelines](docs/code-quality.md).
 
 ## Building for Production
 

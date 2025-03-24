@@ -1,0 +1,174 @@
+# Project Architecture
+
+This document outlines the architecture of the OSINT Dashboard, including its components, interactions, and deployment strategies.
+
+## System Overview
+
+The OSINT Dashboard is built with a modern tech stack:
+
+- **Frontend**: Next.js 15.x, React 19.x with App Router
+- **UI Components**: shadcn/ui library for consistent design
+- **Authentication**: NextAuth.js integrated with Supabase Auth
+- **Database**: Supabase PostgreSQL for data storage
+- **API**: Next.js API routes and Supabase functions
+- **Deployment**: Dual deployment options (Vercel and Coolify)
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Client (Browser/Mobile)                     │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       Next.js Frontend                       │
+│                                                             │
+│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │     Pages     │    │  Components  │    │    Hooks     │  │
+│  └───────────────┘    └──────────────┘    └──────────────┘  │
+│                                                             │
+│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │  API Routes   │    │  Auth System │    │ Form Control │  │
+│  └───────────────┘    └──────────────┘    └──────────────┘  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        Supabase Backend                      │
+│                                                             │
+│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │   Auth API    │    │  PostgreSQL  │    │  Storage     │  │
+│  └───────────────┘    └──────────────┘    └──────────────┘  │
+│                                                             │
+│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │  Row Level    │    │   Functions  │    │   Webhooks   │  │
+│  │   Security    │    │              │    │              │  │
+│  └───────────────┘    └──────────────┘    └──────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Key Components
+
+### Frontend
+
+1. **App Router**: Next.js App Router for routing and page structure
+2. **Components**: Reusable UI components built with shadcn/ui
+3. **Auth Context**: Global authentication state management
+4. **Form System**: React Hook Form with Zod validation
+5. **API Clients**: Fetch wrappers for API interactions
+
+### Backend
+
+1. **API Routes**: Next.js API routes for server-side logic
+2. **Authentication**: NextAuth.js with Supabase provider
+3. **Database Access**: Supabase client for data operations
+4. **Email Service**: SMTP integration for notifications
+5. **Storage**: File uploads and management through Supabase
+
+## Deployment Architecture
+
+The application supports two deployment models:
+
+### Vercel Deployment (Serverless)
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  GitHub Repo    │───▶│  Vercel CI/CD   │───▶│ Vercel Platform │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                      │
+                                                      ▼
+┌─────────────────┐                        ┌─────────────────────┐
+│ Vercel Edge     │◀───────────────────────│ Serverless Functions│
+│ (Global CDN)    │                        │  (API Routes)       │
+└─────────────────┘                        └─────────────────────┘
+        │                                          │
+        │                                          │
+        ▼                                          ▼
+┌─────────────────┐                        ┌─────────────────────┐
+│    Browsers     │                        │   Supabase Cloud    │
+└─────────────────┘                        └─────────────────────┘
+```
+
+### Coolify Deployment (Container-based)
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  GitHub Repo    │───▶│  Coolify CI/CD  │───▶│ Docker Container│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                      │
+                                                      ▼
+┌─────────────────┐                        ┌─────────────────────┐
+│  Nginx/Caddy    │◀───────────────────────│  Next.js Server    │
+│  (Reverse Proxy)│                        │ (Container Process) │
+└─────────────────┘                        └─────────────────────┘
+        │                                          │
+        │                                          │
+        ▼                                          ▼
+┌─────────────────┐                        ┌─────────────────────┐
+│    Browsers     │                        │   Supabase Cloud    │
+└─────────────────┘                        └─────────────────────┘
+```
+
+## Data Flow
+
+1. **Authentication Flow**:
+   - User submits credentials → NextAuth.js verifies with Supabase → JWT token issued
+   - Session maintained via secure HTTP-only cookies
+   - Role-based access control enforced on both client and server
+
+2. **Data Operations Flow**:
+   - Client requests data → API route receives request → Server validates authentication
+   - Server performs database operations → Response sent to client
+   - Real-time subscriptions for live updates (where applicable)
+
+3. **Form Submission Flow**:
+   - Client validates with Zod → Form submitted to API route
+   - Server performs secondary validation → Database operation
+   - Response status returned to client → UI updated accordingly
+
+## Multilingual Support
+
+The application supports multiple languages through next-intl:
+
+1. **Language Detection**: Automatic based on browser settings or user selection
+2. **Route Structure**: i18n routing with language prefix
+3. **Translation Files**: Structured JSON files for each supported language
+4. **RTL Support**: Full right-to-left text support for Arabic
+
+## Security Architecture
+
+1. **Authentication**: JWT-based with secure token rotation
+2. **Authorization**: Row-level security in Supabase + middleware checks
+3. **Input Validation**: Client and server validation with Zod
+4. **XSS Protection**: React's built-in protection + strict CSP
+5. **CSRF Protection**: Token-based protection for forms
+6. **API Security**: Rate limiting and request validation
+
+## Deployment Strategies
+
+The application supports deployment to both Vercel and Coolify:
+
+1. **Vercel Deployment**: 
+   - Leverages serverless architecture
+   - Automatic preview deployments
+   - Global CDN for edge delivery
+   - Simplified environment variable management
+   - Detailed in [Vercel Deployment Guide](./vercel-deployment.md)
+
+2. **Coolify Deployment**:
+   - Container-based deployment
+   - Self-hosted option available
+   - Consistent performance (no cold starts)
+   - Fine-grained resource control
+   - Detailed in [Coolify Deployment Guide](./coolify-deployment.md)
+
+See [Deployment Comparison](./deployment-comparison.md) for a detailed comparison between the two options.
+
+## Development Workflow
+
+1. **Local Development**: Next.js dev server with local Supabase instance
+2. **Testing**: Unit tests for components and integration tests for workflows
+3. **CI/CD**: Automated testing and deployment via GitHub Actions
+4. **Environments**: Development, Staging, and Production environments
+5. **Monitoring**: Error tracking and performance monitoring
