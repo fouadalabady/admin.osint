@@ -12,8 +12,6 @@ export const sendEmailWithResend = async ({
   subject: string;
 }) => {
   try {
-    console.log(`Sending email to ${to} via direct API call`);
-
     // Use direct fetch to email service API
     // Example using browser fetch for testing - in production you should use server API endpoint
     const response = await fetch(
@@ -27,7 +25,6 @@ export const sendEmailWithResend = async ({
 
     return { success: true, result };
   } catch (error) {
-    console.error('Error sending email via alternative service:', error);
     return { success: false, error };
   }
 };
@@ -37,19 +34,6 @@ export const sendEmailWithResend = async ({
 export const fallbackEmailOption = (email: string, subject: string) => {
   // Create a mailto link that will open the user's email client
   const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
-
-  // Log instructions for manual sending
-  console.log(`
-    ----------------------------------------
-    FALLBACK EMAIL OPTION
-    ----------------------------------------
-    If you're not receiving emails, please:
-    
-    1. Check your spam/junk folder
-    2. Try using this manual link: ${mailtoLink}
-    3. Contact support at admin@example.com
-    ----------------------------------------
-  `);
 
   return mailtoLink;
 };

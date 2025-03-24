@@ -19,10 +19,8 @@ export const createTransporter = async () => {
   // Verify connection
   try {
     await transporter.verify();
-    console.log('SMTP connection verified successfully');
     return transporter;
   } catch (error) {
-    console.error('SMTP connection error:', error);
     throw new Error('Failed to establish SMTP connection');
   }
 };
@@ -49,10 +47,8 @@ export const sendEmail = async ({
       html,
     });
 
-    console.log('Email sent:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending email:', error);
     return { success: false, error };
   }
 };

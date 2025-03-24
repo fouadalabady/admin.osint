@@ -28,7 +28,7 @@ declare module 'next-auth' {
   
   interface Session {
     expires: string;
-    // @ts-ignore
+    // @ts-expect-error
     user: {
       id: string;
       email: string;

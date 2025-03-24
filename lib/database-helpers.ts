@@ -55,7 +55,6 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
     // Check for errors in either query
     if (otpError || regError) {
       const errorMessage = otpError?.message || regError?.message || 'Unknown error';
-      console.error('Error checking tables:', otpError || regError);
 
       // Fallback approach - try a direct query
       try {
@@ -125,7 +124,6 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
           : `Missing tables. Found: ${tables.join(', ')}`,
     };
   } catch (error) {
-    console.error('Error checking tables:', error);
     return {
       exists: false,
       otpExists: false,
@@ -164,7 +162,6 @@ export async function executeSQL(sql: string): Promise<SQLExecutionResult> {
       message: 'SQL executed successfully',
     };
   } catch (error) {
-    console.error('Unexpected error executing SQL:', error);
     return {
       success: false,
       error,
@@ -215,7 +212,6 @@ export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
       }
     } catch (primaryError) {
       // First attempt failed, continue to fallback
-      console.warn('Primary method to create function failed:', primaryError);
     }
 
     // Fallback: Try with a different approach - using a stored procedure if available
@@ -249,7 +245,6 @@ export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
         .select();
 
       if (fallbackError) {
-        console.error('Error creating exec_sql function with fallback:', fallbackError);
         return {
           success: false,
           message: `Failed to create exec_sql function: ${fallbackError.message}`,
@@ -262,7 +257,6 @@ export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
         message: 'Created exec_sql function with fallback method',
       };
     } catch (error) {
-      console.error('All attempts to create exec_sql function failed:', error);
       return {
         success: false,
         message: `Failed to create exec_sql function: ${
@@ -272,7 +266,6 @@ export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
       };
     }
   } catch (error) {
-    console.error('Error creating exec_sql function:', error);
     return {
       success: false,
       message: `Failed to create exec_sql function: ${
