@@ -126,6 +126,23 @@ npm run dev:webpack
 yarn dev:webpack
 ```
 
+### Code Quality
+
+We maintain high code quality standards in this project. Before committing any code, please ensure:
+
+1. Your code follows the linting rules
+2. TypeScript types are properly used (avoid `any`)
+3. No unused variables or imports remain
+4. React hooks have proper dependency arrays
+
+Run the following to check and fix code quality issues:
+
+```bash
+npm run fix-code-quality
+```
+
+For detailed guidelines, see [Code Quality Guidelines](docs/code-quality.md).
+
 ## Building for Production
 
 To build the application for production:
