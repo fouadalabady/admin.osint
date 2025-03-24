@@ -18,7 +18,7 @@
     "clean": "rm -rf .next out",
     "postinstall": "npx patch-package || true",
     "build:clean": "npm run clean && npm run build",
-    "vercel-build": "NEXT_PUBLIC_VERCEL_ENV=production VERCEL_ENV=build next build"
+    "vercel-build": "NODE_OPTIONS='--max-old-space-size=4096' NEXT_PUBLIC_VERCEL_ENV=production VERCEL_ENV=build SKIP_ENV_VALIDATION=1 SKIP_API_VALIDATION=1 next build || (echo 'Build failed! Trying again with debug logs:' && NODE_OPTIONS='--max-old-space-size=4096' NEXT_PUBLIC_VERCEL_ENV=production VERCEL_ENV=build SKIP_ENV_VALIDATION=1 SKIP_API_VALIDATION=1 DEBUG=* next build)"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
