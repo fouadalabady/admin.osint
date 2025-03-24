@@ -1,46 +1,51 @@
 # Pull Request Template
 
 ## Description
+<!-- Provide a clear and concise description of the changes in this PR -->
 
-Please include a summary of the changes and which issue is fixed. Include relevant motivation and context.
+## Related Issue
+<!-- Link to the issue that this PR addresses -->
+Fixes #
 
-Fixes # (issue number)
-
-## Type of change
-
-Please delete options that are not relevant.
-
+## Type of Change
+<!-- Mark with an 'x' the types of changes introduced in this PR -->
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
-- [ ] Refactoring (no functional changes)
+- [ ] Code refactoring
 - [ ] Performance improvement
+- [ ] Test updates
 
-## Checklist:
+## How Has This Been Tested?
+<!-- Describe the tests that you ran to verify your changes -->
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] E2E tests
+- [ ] Manual testing
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my code
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have verified that my changes are accessible and meet i18n requirements
-- [ ] I have checked for role-based access control (RBAC) implications, if applicable
-
-## Security Considerations:
-
-- [ ] This change includes authentication or authorization modifications
-- [ ] This change involves handling sensitive user data
+## Security Considerations
+- [ ] This change includes security-relevant modifications
 - [ ] This change introduces or updates API endpoints
 - [ ] This change includes modifications to environment variables or secrets
 
-## Screenshots (if appropriate):
+## Checklist
+<!-- Mark with an 'x' all the boxes that apply -->
+- [ ] My code follows the code style of this project
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] My changes generate no new warnings
+- [ ] New and existing unit tests pass locally with my changes
+- [ ] I have checked my code and corrected any misspellings
+- [ ] I have verified that my changes are accessible and meet i18n requirements
+- [ ] I have checked for role-based access control (RBAC) implications, if applicable
 
-## Additional context:
+## Deployment Notes
+<!-- Include any notes related to deployment of this change -->
 
-Add any other context about the pull request here.
+## Screenshots (if applicable)
+<!-- Add screenshots to help explain your changes if relevant -->
 
-## Deployment Notes:
-
-Any special considerations for deployment? Does this PR require database migrations? 
+## Additional Notes
+<!-- Add any other information about the PR here --> 
