@@ -14,9 +14,25 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
+import { useSession } from 'next-auth/react';
+import { UserRole } from '@/types/auth';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function CreateUserPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isSuperAdmin = (session?.user?.role as UserRole) === 'super_admin';
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,11 +41,18 @@ export default function CreateUserPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prevData => ({
       ...prevData,
       [name]: value,
+    }));
+  };
+  
+  const handleRoleChange = (value: string) => {
+    setFormData(prevData => ({
+      ...prevData,
+      role: value,
     }));
   };
 
@@ -46,6 +69,7 @@ export default function CreateUserPage() {
         options: {
           data: {
             role: formData.role,
+            status: 'pending', // Default status for new users
           },
         },
       });
@@ -57,9 +81,8 @@ export default function CreateUserPage() {
       // Success! Redirect back to users list
       router.push('/dashboard/users');
       router.refresh();
-    } catch (err: Error | unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to create user. Please try again.';
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to create user. Please try again.';
       console.error('Registration error:', err);
       setError(errorMessage);
     } finally {
@@ -77,18 +100,19 @@ export default function CreateUserPage() {
           <CardDescription>Add a new user to the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="Email address"
+                placeholder="name@example.com"
                 value={formData.email}
                 onChange={handleChange}
                 required
                 disabled={isLoading}
+                className="w-full"
               />
             </div>
 
@@ -98,45 +122,75 @@ export default function CreateUserPage() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Password"
+                placeholder="Create a secure password"
                 value={formData.password}
                 onChange={handleChange}
                 required
                 disabled={isLoading}
+                className="w-full"
               />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 8 characters long
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <select
-                id="role"
-                name="role"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                value={formData.role}
-                onChange={handleChange}
+              <Label htmlFor="role">User Role</Label>
+              <Select 
+                value={formData.role} 
+                onValueChange={handleRoleChange}
                 disabled={isLoading}
               >
-                <option value="user">User</option>
-                <option value="editor">Editor</option>
-                <option value="admin">Admin</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Available Roles</SelectLabel>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="editor">Editor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    {isSuperAdmin && (
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {formData.role === 'super_admin' 
+                  ? 'Super Admins have full control over the entire system' 
+                  : formData.role === 'admin'
+                  ? 'Admins can manage users and content'
+                  : formData.role === 'editor'
+                  ? 'Editors can create and edit content'
+                  : 'Users have limited access to content'}
+              </p>
             </div>
 
-            {error && <div className="p-3 text-sm text-white bg-red-500 rounded">{error}</div>}
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating User...' : 'Create User'}
-            </Button>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
           </form>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
           <Button
             variant="outline"
-            className="w-full"
             onClick={() => router.push('/dashboard/users')}
             disabled={isLoading}
+            className="w-full sm:w-auto"
           >
             Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            {isLoading ? 'Creating User...' : 'Create User'}
           </Button>
         </CardFooter>
       </Card>
