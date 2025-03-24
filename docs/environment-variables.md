@@ -1,0 +1,157 @@
+# Environment Variables
+
+This document provides an overview of the environment variables used in the OSINT Dashboard project.
+
+## Environment Variables Reference
+
+Below is a comprehensive list of all environment variables used in the application:
+
+```bash
+# OSINT Dashboard Environment Variables Example
+# Copy this file to .env.local and fill in the appropriate values
+
+# ========================================
+# Application Configuration
+# ========================================
+NODE_ENV=development
+NEXT_TELEMETRY_DISABLED=1
+
+# ========================================
+# Deployment Configuration
+# ========================================
+# Base URL for your application (required for NextAuth.js)
+NEXTAUTH_URL=http://localhost:3000
+# Secret used to encrypt cookies and tokens (generate with `openssl rand -base64 32`)
+NEXTAUTH_SECRET=your-nextauth-secret-here
+
+# ========================================
+# Supabase Configuration
+# ========================================
+# Supabase project URL
+NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project.supabase.co
+# Supabase anonymous key (public)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+# Supabase service role key (private, server-side only)
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# ========================================
+# Email Configuration
+# ========================================
+# SMTP server settings for sending emails
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-username
+SMTP_PASSWORD=your-smtp-password
+SMTP_FROM_NAME=OSINT Dashboard
+SMTP_FROM_EMAIL=noreply@yourdomain.com
+
+# ========================================
+# Security & Authentication
+# ========================================
+# Google reCAPTCHA v3 keys for form protection
+RECAPTCHA_SITE_KEY=your-recaptcha-site-key
+RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
+
+# JWT token expiration settings (in seconds)
+# 30 days = 2592000 seconds
+JWT_EXPIRATION=2592000
+# 7 days = 604800 seconds  
+JWT_REFRESH_EXPIRATION=604800
+
+# OTP verification settings
+OTP_EXPIRY_MINUTES=10
+PASSWORD_RESET_EXPIRY_MINUTES=30
+
+# ========================================
+# Localization & Regional Settings
+# ========================================
+# Default locale for the application
+DEFAULT_LOCALE=en
+# Supported locales (comma-separated)
+SUPPORTED_LOCALES=en,ar
+
+# ========================================
+# Vercel-specific Configuration
+# ========================================
+# Set to 'true' during Vercel builds to skip certain validations
+VERCEL_ENV=development
+NEXT_PUBLIC_VERCEL_ENV=development
+SKIP_ENV_VALIDATION=false
+SKIP_API_VALIDATION=false
+
+# ========================================
+# Development & Testing
+# ========================================
+# Set to 'true' to enable detailed logging
+DEBUG=false
+# Memory allocation for builds (MB)
+NODE_OPTIONS=--max-old-space-size=4096
+
+# Dashboard Configuration
+NEXT_PUBLIC_DASHBOARD_TITLE="OSINT Dashboard"
+NEXT_PUBLIC_COMPANY_NAME="Your Company"
+
+# Coolify Deployment (for CI/CD)
+COOLIFY_WEBHOOK_URL=your-coolify-webhook-url
+```
+
+## Environment Setup Instructions
+
+### Local Development
+
+1. Create a `.env.local` file in the root of your project
+2. Copy the variables from this guide and update with your own values
+3. Never commit `.env.local` to version control
+
+### Production Setup (Vercel)
+
+1. Configure environment variables in the Vercel dashboard
+2. Ensure all production-specific URLs and keys are set correctly
+3. Set `NEXTAUTH_URL` to the production URL
+
+### Production Setup (Coolify)
+
+1. Configure environment variables in Coolify
+2. Use the webhook URL for CI/CD integration with GitHub
+
+## PostgreSQL Database Variables
+
+These variables are used for direct database connections:
+
+```bash
+POSTGRES_URL=postgres://user:password@host:port/database?sslmode=require&supa=base-pooler.x
+POSTGRES_PRISMA_URL=postgres://user:password@host:port/database?sslmode=require&supa=base-pooler.x
+POSTGRES_URL_NON_POOLING=postgres://user:password@host:port/database?sslmode=require
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your-password
+POSTGRES_DATABASE=postgres
+POSTGRES_HOST=db.yourproject.supabase.co
+```
+
+## Email Configuration Variables
+
+The application uses SMTP for sending emails. Configure these variables for email functionality:
+
+```bash
+EMAIL_USER="your-email@example.com"
+EMAIL_PASS="your-email-password"
+SMTP_SERVER_USERNAME="your-smtp-username"
+SMTP_SERVER_PASSWORD="your-smtp-password"
+SMTP_SERVER_HOST="smtp.example.com"
+SITE_MAIL_RECEIVER="admin@example.com"
+```
+
+## Security Best Practices
+
+1. Rotate sensitive credentials regularly
+2. Use strong, unique values for secret keys
+3. Keep environment variables securely stored
+4. Use different values for development and production environments
+
+## Troubleshooting
+
+If you encounter authentication or API errors, verify that:
+
+1. All Supabase URLs and keys are correctly set
+2. `NEXTAUTH_URL` matches your application's base URL
+3. SMTP credentials are valid for email functionality 

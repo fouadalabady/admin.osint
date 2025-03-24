@@ -1,0 +1,120 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Deployment Checklist
+
+This checklist helps ensure that all necessary steps are completed before, during, and after deploying the OSINT Dashboard to either Vercel or Coolify.
+
+## 📋 Pre-Deployment Checklist
+
+### Code Quality & Testing
+- [ ] All linting issues resolved (`npm run lint:fix`)
+- [ ] TypeScript type checking passed (`npm run typecheck`)
+- [ ] Test suite passing (`npm run test`)
+- [ ] Manual testing of critical user flows completed
+- [ ] Performance tests run and analyzed
+
+### Environment Variables
+- [ ] All required environment variables defined
+- [ ] Sensitive values properly secured
+- [ ] Environment-specific variables configured correctly
+- [ ] API keys and secrets checked for validity
+
+### Database & Infrastructure
+- [ ] Database migrations prepared and tested
+- [ ] Backup of existing production database created
+- [ ] Infrastructure resources scaled appropriately
+- [ ] CDN/caching configured if applicable
+
+### Build & Optimization
+- [ ] Production build completed successfully locally
+- [ ] Static assets optimized
+- [ ] Bundle size analyzed and optimized if needed
+- [ ] Build process checked for any warnings
+
+### Documentation & Communication
+- [ ] Deployment plan communicated to the team
+- [ ] Change log/release notes prepared
+- [ ] Relevant documentation updated
+- [ ] Stakeholders notified of upcoming changes
+
+## 🚀 Deployment Process
+
+### Vercel Deployment
+- [ ] Run `scripts/deploy-vercel.sh`
+- [ ] Configure environment variables in Vercel dashboard
+- [ ] Set up appropriate build and development settings
+- [ ] Configure domain settings
+- [ ] Verify build and deployment logs for errors
+
+### Coolify Deployment
+- [ ] Verify Coolify server resources and configuration
+- [ ] Update `coolify.json` configuration if needed
+- [ ] Push changes to the configured repository branch
+- [ ] Monitor build and deployment logs
+- [ ] Verify container health and resource usage
+
+## 🔍 Post-Deployment Verification
+
+### Functional Verification
+- [ ] Verify application loads correctly in production
+- [ ] Test all critical user flows in production
+- [ ] Verify API endpoints and integrations
+- [ ] Test authentication and authorization
+- [ ] Verify form submissions and data storage
+
+### Technical Verification
+- [ ] Check console for errors and warnings
+- [ ] Verify correct environment variables are being used
+- [ ] Test page load performance
+- [ ] Verify database connections and operations
+- [ ] Check logs for any unexpected errors or warnings
+
+### Security Review
+- [ ] Verify HTTPS setup and certificate validity
+- [ ] Check Content Security Policy headers
+- [ ] Test authentication security
+- [ ] Verify API rate limiting is active
+- [ ] Ensure no sensitive information is exposed
+
+### Monitoring & Alerts
+- [ ] Verify logging is properly configured
+- [ ] Set up monitoring for key metrics
+- [ ] Configure alerts for critical errors
+- [ ] Test monitoring systems
+- [ ] Ensure team has access to logs and monitoring dashboards
+
+## 🔄 Rollback Plan
+
+### Rollback Triggers
+- [ ] Critical functionality broken
+- [ ] Unresolved security vulnerabilities
+- [ ] Severe performance degradation
+- [ ] Data integrity issues
+
+### Rollback Process for Vercel
+- [ ] Identify previous working deployment in Vercel dashboard
+- [ ] Click "Redeploy" on the working deployment
+- [ ] Verify rollback was successful
+- [ ] Notify team of rollback
+
+### Rollback Process for Coolify
+- [ ] Identify previous working Docker image
+- [ ] Redeploy previous image version
+- [ ] Restore database backup if needed
+- [ ] Verify rollback was successful
+- [ ] Notify team of rollback
+
+## 📊 Post-Deployment Analysis
+
+- [ ] Review deployment process for improvements
+- [ ] Document any issues encountered
+- [ ] Update deployment documentation if needed
+- [ ] Share learnings with the team
+- [ ] Plan for resolving any outstanding issues
+
+---
+
+This checklist should be customized for your specific project needs and updated regularly as your deployment process evolves. 

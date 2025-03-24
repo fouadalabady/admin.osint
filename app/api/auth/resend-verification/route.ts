@@ -1,79 +1,72 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase';
-import { generateOTP, hashOTP, getOTPExpiry } from '@/lib/otp';
-import { sendEmail } from '@/lib/email';
+import { supabase } from '@/lib/supabase';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400 }
+      );
     }
 
-    // Get Supabase admin client
-    const supabase = createServerSupabaseClient();
-
     // Check if user exists
-    const { data: user, error: userError } = await supabase.auth.admin.getUserByEmail(email);
+    const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
 
-    if (userError || !user) {
+    if (userError || !users) {
       console.error('Error fetching user:', userError);
       return NextResponse.json(
-        { error: 'User not found with this email address' },
+        { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    // Generate new OTP
-    const otp = generateOTP(6);
-    const otpHash = hashOTP(otp, email);
-    const expiresAt = getOTPExpiry(15); // 15 minutes expiry
+    const user = users.find(u => u.email === email);
 
-    // Store OTP verification record
-    const { error: otpError } = await supabase.from('otp_verifications').insert({
-      user_id: user.user.id,
-      email: email,
-      otp_hash: otpHash,
-      purpose: 'email_verification',
-      expires_at: new Date(expiresAt).toISOString(),
-    });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Generate OTP verification code
+    const { data: otpData, error: otpError } = await supabase
+      .from('otp_verifications')
+      .insert([
+        {
+          user_id: user.id,
+          email: email,
+          expires_at: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes from now
+        }
+      ])
+      .select()
+      .single();
 
     if (otpError) {
-      console.error('Error storing OTP verification:', otpError);
-      return NextResponse.json({ error: 'Failed to create verification code' }, { status: 500 });
+      console.error('Error generating OTP:', otpError);
+      return NextResponse.json(
+        { error: 'Failed to generate verification code' },
+        { status: 500 }
+      );
     }
 
-    try {
-      // Send verification email
-      const emailResult = await sendEmail({
-        to: email,
-        subject: 'Verify Your Email Address',
-        html: `
-          <h1>Verify Your Email Address</h1>
-          <p>Please use the following verification code to verify your email address:</p>
-          <h2 style="background: #f4f4f4; padding: 10px; font-size: 24px; text-align: center; letter-spacing: 5px;">${otp}</h2>
-          <p>This code will expire in 15 minutes.</p>
-          <p>If you did not request this verification, please ignore this email.</p>
-          <p>Thank you,<br>The Admin Dashboard Team</p>
-        `,
-      });
+    // Send verification email
+    await sendVerificationEmail(email, otpData.otp_code);
 
-      if (!emailResult.success) {
-        console.error('Error sending verification email:', emailResult.error);
-        return NextResponse.json({ error: 'Failed to send verification email' }, { status: 500 });
-      }
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      return NextResponse.json({ error: 'Failed to send verification email' }, { status: 500 });
-    }
+    return NextResponse.json(
+      { message: 'Verification email sent successfully' },
+      { status: 200 }
+    );
 
-    return NextResponse.json({
-      success: true,
-      message: 'Verification email sent successfully',
-    });
   } catch (error) {
-    console.error('Error in resend verification process:', error);
-    return NextResponse.json({ error: 'Failed to resend verification email' }, { status: 500 });
+    console.error('Error in resend verification:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

@@ -102,17 +102,9 @@ function ResetPasswordContent() {
           return setError('Invalid reset link. Please request a new password reset.');
         }
 
-        const { error: updateError } = await supabase.auth.updateUser(
-          {
-            password: formData.password,
-          },
-          {
-            authFlow: {
-              flowType: 'pkce',
-              code: supabaseCode,
-            },
-          }
-        );
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: formData.password,
+        });
 
         if (updateError) throw updateError;
 

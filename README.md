@@ -40,12 +40,13 @@ A secure, Next.js-powered dashboard for OSINT operations with admin capabilities
    npm install
    ```
 
-3. Create a `.env.local` file based on `.env.example`
+3. Create a `.env.local` file based on the environment variables documentation
    ```bash
-   cp .env.example .env.local
+   # Create a new .env.local file
+   touch .env.local
    ```
 
-4. Update the environment variables in `.env.local` with your Supabase credentials and other settings
+4. Configure the required environment variables in `.env.local` using the guidance in the [Environment Variables Documentation](docs/environment-variables.md)
 
 5. Start the development server
    ```bash
@@ -78,7 +79,6 @@ osintdash/
 ├── public/            # Static assets
 ├── styles/            # Global styles
 ├── types/             # TypeScript type definitions
-├── .env.example       # Example environment variables
 └── docs/              # Documentation
 ```
 
@@ -94,7 +94,7 @@ Key environment variables:
 | `NEXTAUTH_URL` | Base URL for NextAuth |
 | `NEXTAUTH_SECRET` | Secret for NextAuth |
 
-See `.env.example` for a complete list.
+For a complete list and setup instructions, see the [Environment Variables Documentation](docs/environment-variables.md).
 
 ## Contributing
 
