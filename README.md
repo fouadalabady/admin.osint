@@ -1,156 +1,107 @@
 # OSINT Dashboard
 
-A modern, secure admin dashboard built with Next.js 14, Supabase, and shadcn/ui. Features include authentication, user management, and a beautiful dark/light theme.
+Admin dashboard and agency website with headless CMS capabilities, built with Next.js, React, Supabase, and shadcn/ui.
 
 ## Features
 
-- 🔐 **Secure Authentication**
-  - Email/Password authentication with NextAuth.js
-  - Password reset functionality
-  - Role-based access control (RBAC)
-  - Protected API routes and middleware
+- **Landing Page & Service Pages**: Fully customizable content management
+- **Blog Module**: Create, edit, and publish blog posts with SEO management
+- **Lead Generation Forms**: 
+  - Schedule a Demo
+  - Contact Us
+  - Newsletter Subscription
+  - Join Our Team
+- **Multilingual Support**: Full localization for Arabic and English
+- **Role-Based Access Control**: Admin, Editor, and Contributor roles
+- **Secure Authentication**: Including password reset with fallback mechanisms
 
-- 🎨 **Modern UI**
-  - Built with shadcn/ui components
-  - Dark/Light theme support
-  - Responsive design
-  - Clean and intuitive interface
+## Technology Stack
 
-- 👥 **User Management**
-  - User roles and permissions
-  - User creation and management
-  - Profile management
-
-- 🛠️ **Technical Stack**
-  - Next.js 14 (App Router)
-  - TypeScript
-  - Supabase (Database & Auth)
-  - Tailwind CSS
-  - shadcn/ui Components
+- **Frontend**: Next.js 15 & React 19
+- **UI Components**: shadcn/ui
+- **Authentication**: NextAuth.js with Supabase
+- **Database**: Supabase PostgreSQL
+- **Localization**: next-intl
+- **Form Handling**: React Hook Form with Zod validation
+- **Email**: SMTP service integration
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18+ 
-- npm or yarn
-- Supabase account
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/osintdash.git
-cd osintdash
-```
-
+1. Clone the repository
 2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Create a `.env.local` file in the root directory with the following variables:
-```env
-# Next Auth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-```
-
-4. Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Project Structure
-
-```
-├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes
-│   ├── auth/              # Authentication pages
-│   └── dashboard/         # Dashboard pages
-├── components/            # React components
-│   ├── auth/             # Authentication components
-│   └── ui/               # UI components (shadcn/ui)
-├── lib/                   # Utility functions
-└── public/               # Static files
-```
-
-## Authentication Flow
-
-1. **Sign Up**
-   - User registers with email/password
-   - Email verification sent
-   - User role assigned
-
-2. **Sign In**
-   - Credentials validation
-   - JWT token generation
-   - Role-based redirection
-
-3. **Password Reset**
-   - Request reset link
-   - Email verification
-   - Secure password update
-
-## Development
-
-### Commands
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-
-### Adding New Features
-
-1. Create new components in `components/`
-2. Add new pages in `app/`
-3. Update API routes in `app/api/`
-4. Add new UI components using shadcn/ui
-
-## Deployment
-
-The project can be deployed to any platform that supports Next.js:
-
-1. **Vercel** (Recommended)
-   - Connect your GitHub repository
-   - Add environment variables
-   - Deploy
-
-2. **Manual Deployment**
    ```bash
-   npm run build
-   npm run start
+   npm install
    ```
+3. Configure environment variables (see .env.example)
+4. Run development server:
+   ```bash
+   npm run dev
+   ```
+
+## Local Supabase Setup
+
+See the [Supabase Local Development Guide](docs/supabase-local-development.md) for detailed instructions.
+
+## Documentation
+
+- [Project Architecture](docs/project-architecture.md) - Overview of system architecture and flows
+- [Security Model](docs/security-model.md) - Details on security implementation
+- [Testing Guidelines](docs/testing-guidelines.md) - Testing strategy and examples
+- [Supabase Local Development](docs/supabase-local-development.md) - Guide for local development
+- [Authentication Flow](docs/authentication-flow.md) - Authentication process documentation
+
+## Password Reset System
+
+Our system implements a robust password reset flow with dual delivery methods:
+
+1. **Primary method**: Supabase Auth's built-in email delivery
+2. **Fallback method**: Custom SMTP email service
+
+This ensures reliability even when one delivery method fails. The system includes:
+
+- Secure verification code generation and storage
+- Time-limited tokens (1 hour validity)
+- One-time use verification
+- Password strength validation
+
+For detailed information about the password reset system, see:
+- [Password Reset Architecture](docs/project-architecture.md)
+- [Password Reset Security Model](docs/security-model.md)
+- [Password Reset Testing Guide](docs/testing-guidelines.md)
+
+## Email Confirmation Process
+
+The user registration flow in this application includes email verification using a one-time password (OTP) system. Here's how it works:
+
+1. When a user registers, a new record is created in Supabase Auth with `email_confirm: false`
+2. An OTP code is generated, hashed, and stored in the `otp_verifications` table
+3. A verification email with the OTP is sent to the user
+4. When the user verifies their email by submitting the OTP:
+   - The OTP is verified against the hash in the database
+   - The `verified_at` timestamp is set in the `otp_verifications` table
+   - The `email_verified` flag is set to `true` in the `user_registration_requests` table
+   - The user's `email_confirm` status is updated in Supabase Auth
+
+### Troubleshooting Email Confirmation Issues
+
+If users encounter "Email not confirmed" errors despite completing verification:
+
+1. Check if the `verify-otp` endpoint correctly updates both:
+   - `email_verified` flag in the `user_registration_requests` table
+   - `email_confirm` flag in Supabase Auth via `supabase.auth.admin.updateUserById`
+
+2. Run the email confirmation fix script:
+   ```
+   node scripts/fix-all-user-emails.js
+   ```
+   This script identifies users who have verified their email through OTP but whose email confirmation status is not set in Supabase Auth.
+
+3. For individual users, you can use:
+   ```
+   node scripts/fix-new-user-accounts.js
+   ```
+   This script analyzes and fixes email confirmation issues for specific accounts.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Next.js](https://nextjs.org/)
-- [Supabase](https://supabase.com/)
-- [shadcn/ui](https://ui.shadcn.com/)
-- [NextAuth.js](https://next-auth.js.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.

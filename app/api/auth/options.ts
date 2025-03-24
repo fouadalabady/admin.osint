@@ -24,6 +24,19 @@ export const authOptions: NextAuthOptions = {
           if (error) throw error;
           if (!user) return null;
 
+          // Verify if user is active (not pending or rejected)
+          if (user.user_metadata?.status !== 'active') {
+            if (user.user_metadata?.status === 'pending') {
+              throw new Error('Your account is pending approval. Please check your email for verification instructions.');
+            } else if (user.user_metadata?.status === 'rejected') {
+              throw new Error('Your account registration has been rejected. Please contact support for more information.');
+            } else {
+              throw new Error('Your account is not active. Please contact support.');
+            }
+          }
+
+          console.log("Login successful for user:", user.email);
+          
           return {
             id: user.id,
             email: user.email,
@@ -31,7 +44,7 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           console.error('Auth error:', error);
-          return null;
+          throw error;
         }
       }
     })
@@ -39,22 +52,46 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Initial sign in
         token.role = user.role;
+        token.lastActive = Date.now();
+        console.log("JWT callback - user signed in:", user.email);
       }
+      
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
         session.user.role = token.role;
+        session.user.id = token.sub;
+        
+        // Add lastActive to session for client-side awareness
+        session.lastActive = token.lastActive;
+        
+        console.log("Session callback - user session updated:", session.user.email);
       }
       return session;
     }
   },
   pages: {
-    signIn: '/auth',
-    error: '/auth/error',
+    signIn: '/auth/login',
+    error: '/auth/login',
+    signOut: '/',
   },
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+  debug: process.env.NODE_ENV === 'development',
 }; 

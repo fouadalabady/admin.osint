@@ -17,6 +17,7 @@ import {
   Menu,
   LogOut,
   Bell,
+  Database,
 } from "lucide-react";
 
 interface NavItem {
@@ -24,24 +25,6 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
 }
-
-const navItems: NavItem[] = [
-  {
-    title: "Overview",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Users",
-    href: "/dashboard/users",
-    icon: Users,
-  },
-  {
-    title: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-  },
-];
 
 export default function DashboardLayout({
   children,
@@ -51,6 +34,43 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Check if user is super admin
+  const isSuperAdmin = session?.user?.role === "super_admin";
+
+  // Create navigation items based on user role
+  const getNavItems = () => {
+    const items: NavItem[] = [
+      {
+        title: "Overview",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        title: "Users",
+        href: "/dashboard/users",
+        icon: Users,
+      },
+      {
+        title: "Settings",
+        href: "/dashboard/settings",
+        icon: Settings,
+      },
+    ];
+
+    // Add setup link for super admins only
+    if (isSuperAdmin) {
+      items.push({
+        title: "Database Setup",
+        href: "/admin/setup",
+        icon: Database,
+      });
+    }
+
+    return items;
+  };
+
+  const navItems = getNavItems();
 
   return (
     <div className="flex min-h-screen">
