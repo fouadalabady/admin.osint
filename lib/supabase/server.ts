@@ -15,11 +15,12 @@ export const createServerSupabaseClient = () => {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
-    },
-    cookies: {
-      get: (name: string) => cookies().get(name)?.value,
-      set: () => {}, // No-op since we're on the server
-      remove: () => {}, // No-op since we're on the server
+      storageKey: 'sb-auth-token',
+      storage: {
+        getItem: (key: string) => cookies().get(key)?.value ?? null,
+        setItem: () => {}, // No-op since we're on the server
+        removeItem: () => {}, // No-op since we're on the server
+      },
     },
   });
 }; 
