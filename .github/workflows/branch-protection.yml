@@ -1,0 +1,64 @@
+name: Branch Protection
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  check_direct_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Check if push was direct
+        id: check_push
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" =~ ^refs/heads/(main|develop)$ ]]; then
+            # Check if this was a PR merge or direct push
+            if git log -1 --pretty=%B | grep -q "Merge pull request"; then
+              echo "Push appears to be from a merged PR - allowed"
+              echo "is_direct_push=false" >> $GITHUB_OUTPUT
+            else
+              echo "Direct push detected to protected branch - this violates our branch protection policy"
+              echo "is_direct_push=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Not a push to main or develop"
+            echo "is_direct_push=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Issue for Direct Push
+        if: steps.check_push.outputs.is_direct_push == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Direct push to ${branch} detected`,
+              body: `A direct push to the ${branch} branch was detected from @${context.actor} in commit ${context.sha}.
+              
+              According to our Git Flow workflow, all changes to ${branch} should come through Pull Requests.
+              
+              Please follow the Git Flow process documented in .github/workflows/gitflow.md for future changes.`
+            });
+            console.log(`Created issue for direct push to ${branch}`);
+
+      - name: Notify in PR
+        if: steps.check_push.outputs.is_direct_push == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            core.warning(`⚠️ Direct push to ${branch} detected! This violates our branch protection policy.
+            
+            According to our Git Flow process, all changes to ${branch} should come through Pull Requests.
+            Please refer to .github/workflows/gitflow.md for our workflow guidelines.`); 

@@ -1,9 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="container flex justify-center items-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    }>
+      <AuthRedirect />
+    </Suspense>
+  );
+}
+
+function AuthRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
