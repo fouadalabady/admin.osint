@@ -15,7 +15,7 @@ const smtpConfig = {
 export const createTransporter = async () => {
   // Create a transporter
   const transporter = nodemailer.createTransport(smtpConfig);
-  
+
   // Verify connection
   try {
     await transporter.verify();
@@ -41,18 +41,41 @@ export const sendEmail = async ({
 }) => {
   try {
     const transporter = await createTransporter();
-    
+
     const info = await transporter.sendMail({
       from: `"Admin Dashboard" <${from}>`,
       to,
       subject,
       html,
     });
-    
+
     console.log('Email sent:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending email:', error);
     return { success: false, error };
   }
-}; 
+};
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_SERVER_HOST,
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_SERVER_USERNAME,
+    pass: process.env.SMTP_SERVER_PASSWORD,
+  },
+});
+
+export async function sendVerificationEmail(email: string, otpCode: string) {
+  await transporter.sendMail({
+    from: process.env.SMTP_SERVER_USERNAME,
+    to: email,
+    subject: 'Verify Your Email',
+    html: `
+      <h1>Email Verification</h1>
+      <p>Your verification code is: <strong>${otpCode}</strong></p>
+      <p>This code will expire in 15 minutes.</p>
+    `,
+  });
+}

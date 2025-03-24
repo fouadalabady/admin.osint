@@ -133,4 +133,4 @@ export const setupCommands = `
 SELECT * FROM information_schema.tables
 WHERE table_schema = 'public'
 AND table_name IN ('otp_verifications', 'user_registration_requests');
-`; 
+`;

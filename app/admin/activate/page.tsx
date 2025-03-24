@@ -1,31 +1,38 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ActivateAdminPage() {
-  const [email, setEmail] = useState("fouadelabady@gmail.com");
-  const [adminKey, setAdminKey] = useState("");
+  const [email, setEmail] = useState('fouadelabady@gmail.com');
+  const [adminKey, setAdminKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
     try {
-      const response = await fetch("/api/auth/activate-admin", {
-        method: "POST",
+      const response = await fetch('/api/auth/activate-admin', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, adminKey }),
       });
@@ -33,13 +40,13 @@ export default function ActivateAdminPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to activate admin user");
+        throw new Error(data.error || 'Failed to activate admin user');
       }
 
       setSuccess(`Admin user ${email} activated successfully!`);
     } catch (err) {
-      console.error("Error activating admin:", err);
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      console.error('Error activating admin:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -51,9 +58,7 @@ export default function ActivateAdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Activate Admin User</CardTitle>
-            <CardDescription>
-              Activate a super admin user for the dashboard
-            </CardDescription>
+            <CardDescription>Activate a super admin user for the dashboard</CardDescription>
           </CardHeader>
 
           {error && (
@@ -92,7 +97,7 @@ export default function ActivateAdminPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
                 />
@@ -106,7 +111,7 @@ export default function ActivateAdminPage() {
                   id="adminKey"
                   type="password"
                   value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
+                  onChange={e => setAdminKey(e.target.value)}
                   required
                   disabled={isLoading}
                   placeholder="Enter the admin activation key"
@@ -116,12 +121,8 @@ export default function ActivateAdminPage() {
                 </p>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Activating..." : "Activate Admin User"}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Activating...' : 'Activate Admin User'}
               </Button>
             </form>
           </CardContent>
@@ -135,4 +136,4 @@ export default function ActivateAdminPage() {
       </div>
     </div>
   );
-} 
+}

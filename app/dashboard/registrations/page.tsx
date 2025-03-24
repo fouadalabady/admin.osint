@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,11 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle } from "lucide-react";
-import { toast } from "sonner";
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface RegistrationRequest {
   id: string;
@@ -43,40 +43,44 @@ export default function RegistrationsPage() {
   const [registrations, setRegistrations] = useState<RegistrationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRegistration, setSelectedRegistration] = useState<RegistrationRequest | null>(null);
-  const [adminNotes, setAdminNotes] = useState("");
-  const [activeTab, setActiveTab] = useState("pending");
+  const [adminNotes, setAdminNotes] = useState('');
+  const [activeTab, setActiveTab] = useState('pending');
 
   // Check if user has admin permissions
   const isAdmin = ['admin', 'super_admin'].includes(session?.user?.role as string);
+
+  const fetchRegistrations = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/registrations');
+      if (!response.ok) {
+        throw new Error('Failed to fetch registrations');
+      }
+      const data = await response.json();
+      setRegistrations(data);
+    } catch (err) {
+      setError('Error fetching registrations. Please try again.');
+      console.error('Error fetching registrations:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (session && isAdmin) {
       fetchRegistrations();
     } else if (session && !isAdmin) {
-      setError("You do not have permission to view this page");
+      setError('You do not have permission to view this page');
       setIsLoading(false);
     }
-  }, [session, isAdmin, activeTab]);
+  }, [session, isAdmin, activeTab, fetchRegistrations]);
 
-  const fetchRegistrations = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/registrations?status=${activeTab}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setRegistrations(data);
-    } catch (err) {
-      console.error("Error fetching registrations:", err);
-      setError("Failed to fetch registrations");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateStatus = async (userId: string, status: 'active' | 'rejected', notes?: string) => {
+  const handleUpdateStatus = async (
+    userId: string,
+    status: 'active' | 'rejected',
+    notes?: string
+  ) => {
     try {
       const response = await fetch('/api/registrations', {
         method: 'PUT',
@@ -96,15 +100,14 @@ export default function RegistrationsPage() {
       }
 
       toast.success(
-        status === 'active'
-          ? 'User has been approved and activated'
-          : 'User has been rejected'
+        status === 'active' ? 'User has been approved and activated' : 'User has been rejected'
       );
-      
+
       fetchRegistrations();
-    } catch (err: any) {
-      console.error("Error updating registration:", err);
-      toast.error(err.message || "Failed to update registration status");
+    } catch (err) {
+      console.error('Error updating registration:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update registration status';
+      toast.error(errorMessage);
     }
   };
 
@@ -132,23 +135,35 @@ export default function RegistrationsPage() {
   }
 
   if (error) {
-    return (
-      <div className="p-4 mb-6 text-white bg-red-500 rounded-md">
-        {error}
-      </div>
-    );
+    return <div className="p-4 mb-6 text-white bg-red-500 rounded-md">{error}</div>;
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
+        return (
+          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+            Pending
+          </Badge>
+        );
       case 'active':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>;
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">
+            Active
+          </Badge>
+        );
       case 'rejected':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">Rejected</Badge>;
+        return (
+          <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">
+            Rejected
+          </Badge>
+        );
       case 'suspended':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">Suspended</Badge>;
+        return (
+          <Badge variant="outline" className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+            Suspended
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -204,7 +219,7 @@ export default function RegistrationsPage() {
                         </td>
                       </tr>
                     ) : (
-                      registrations.map((registration) => (
+                      registrations.map(registration => (
                         <tr key={registration.id} className="border-b hover:bg-slate-50">
                           <td className="px-4 py-3">{registration.user?.email}</td>
                           <td className="px-4 py-3">{registration.requested_role}</td>
@@ -215,9 +230,7 @@ export default function RegistrationsPage() {
                               <span className="text-red-600">Not Verified</span>
                             )}
                           </td>
-                          <td className="px-4 py-3">
-                            {getStatusBadge(registration.status)}
-                          </td>
+                          <td className="px-4 py-3">{getStatusBadge(registration.status)}</td>
                           <td className="px-4 py-3">
                             {new Date(registration.created_at).toLocaleDateString()}
                           </td>
@@ -229,7 +242,6 @@ export default function RegistrationsPage() {
                                     <Button
                                       size="sm"
                                       className="bg-green-600 hover:bg-green-700"
-                                      onClick={() => setSelectedRegistration(registration)}
                                     >
                                       <CheckCircle className="mr-1 h-4 w-4" />
                                       Approve
@@ -239,8 +251,9 @@ export default function RegistrationsPage() {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Approve User Registration</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Are you sure you want to approve this user?
-                                        They will be granted the role: <strong>{registration.requested_role}</strong>
+                                        Are you sure you want to approve this user? They will be
+                                        granted the role:{' '}
+                                        <strong>{registration.requested_role}</strong>
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <div className="py-4">
@@ -251,19 +264,23 @@ export default function RegistrationsPage() {
                                         className="w-full p-2 border rounded-md"
                                         rows={3}
                                         value={adminNotes}
-                                        onChange={(e) => setAdminNotes(e.target.value)}
+                                        onChange={e => setAdminNotes(e.target.value)}
                                         placeholder="Add any notes about this approval..."
                                       />
                                     </div>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel onClick={() => setAdminNotes("")}>
+                                      <AlertDialogCancel onClick={() => setAdminNotes('')}>
                                         Cancel
                                       </AlertDialogCancel>
                                       <AlertDialogAction
                                         className="bg-green-600 hover:bg-green-700"
                                         onClick={() => {
-                                          handleUpdateStatus(registration.user_id, 'active', adminNotes);
-                                          setAdminNotes("");
+                                          handleUpdateStatus(
+                                            registration.user_id,
+                                            'active',
+                                            adminNotes
+                                          );
+                                          setAdminNotes('');
                                         }}
                                       >
                                         Approve User
@@ -277,7 +294,6 @@ export default function RegistrationsPage() {
                                     <Button
                                       size="sm"
                                       variant="destructive"
-                                      onClick={() => setSelectedRegistration(registration)}
                                     >
                                       <XCircle className="mr-1 h-4 w-4" />
                                       Reject
@@ -287,8 +303,8 @@ export default function RegistrationsPage() {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Reject User Registration</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        Are you sure you want to reject this user&apos;s registration?
-                                        This action can be reversed later if needed.
+                                        Are you sure you want to reject this user&apos;s
+                                        registration? This action can be reversed later if needed.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <div className="py-4">
@@ -299,19 +315,23 @@ export default function RegistrationsPage() {
                                         className="w-full p-2 border rounded-md"
                                         rows={3}
                                         value={adminNotes}
-                                        onChange={(e) => setAdminNotes(e.target.value)}
+                                        onChange={e => setAdminNotes(e.target.value)}
                                         placeholder="Add the reason for rejection..."
                                       />
                                     </div>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel onClick={() => setAdminNotes("")}>
+                                      <AlertDialogCancel onClick={() => setAdminNotes('')}>
                                         Cancel
                                       </AlertDialogCancel>
                                       <AlertDialogAction
                                         className="bg-red-600 hover:bg-red-700"
                                         onClick={() => {
-                                          handleUpdateStatus(registration.user_id, 'rejected', adminNotes);
-                                          setAdminNotes("");
+                                          handleUpdateStatus(
+                                            registration.user_id,
+                                            'rejected',
+                                            adminNotes
+                                          );
+                                          setAdminNotes('');
                                         }}
                                       >
                                         Reject User
@@ -325,7 +345,9 @@ export default function RegistrationsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => router.push(`/dashboard/users/${registration.user_id}`)}
+                                onClick={() =>
+                                  router.push(`/dashboard/users/${registration.user_id}`)
+                                }
                               >
                                 View Details
                               </Button>
@@ -343,4 +365,4 @@ export default function RegistrationsPage() {
       </Tabs>
     </div>
   );
-} 
+}

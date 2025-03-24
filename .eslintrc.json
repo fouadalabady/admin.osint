@@ -1,10 +1,66 @@
 {
-  "extends": "next/core-web-vitals",
+  "root": true,
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint", "import", "react"],
   "rules": {
-    "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/no-unused-vars": "off",
-    "react/no-unescaped-entities": "off",
-    "react-hooks/exhaustive-deps": "off",
-    "@typescript-eslint/no-empty-object-type": "off"
-  }
+    "@typescript-eslint/ban-types": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unsafe-assignment": "warn",
+    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/no-unsafe-call": "warn",
+    "@typescript-eslint/no-unsafe-argument": "warn",
+    "@typescript-eslint/no-unsafe-return": "warn",
+    "@typescript-eslint/no-unnecessary-condition": "off",
+    "@typescript-eslint/require-await": "warn",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-redundant-type-constituents": "warn",
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "import/no-duplicates": "warn",
+    "react/no-unescaped-entities": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.js", "**/*.test.jsx", "**/*.test.ts", "**/*.test.tsx"],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off"
+      }
+    },
+    {
+      "files": [
+        "app/api/auth/register/route.ts",
+        "app/dashboard/layout.tsx",
+        "app/dashboard/users/page.tsx",
+        "app/debug/session/page.tsx"
+      ],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "build/",
+    "dist/",
+    "*.config.js",
+    "*.config.mjs",
+    "*.config.ts",
+    "*.config.mjs"
+  ]
 }

@@ -6,4 +6,4 @@ export default function DashboardLoading() {
       <p className="text-muted-foreground mt-2">Please wait while we set up your experience</p>
     </div>
   );
-} 
+}

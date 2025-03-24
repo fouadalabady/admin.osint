@@ -6,6 +6,11 @@ on:
       - main
       - develop
 
+# Add permissions block to allow issue creation
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   check_direct_push:
     runs-on: ubuntu-latest
@@ -14,7 +19,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          
+
       - name: Check if push was direct
         id: check_push
         run: |
@@ -59,6 +64,6 @@ jobs:
           script: |
             const branch = context.ref.replace('refs/heads/', '');
             core.warning(`⚠️ Direct push to ${branch} detected! This violates our branch protection policy.
-            
+
             According to our Git Flow process, all changes to ${branch} should come through Pull Requests.
-            Please refer to .github/workflows/gitflow.md for our workflow guidelines.`); 
+            Please refer to .github/workflows/gitflow.md for our workflow guidelines.`);

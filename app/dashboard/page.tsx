@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Card,
   CardContent,
@@ -9,19 +9,44 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Users, FileText, BarChart4, Settings, ChevronRight } from "lucide-react";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Users, FileText, BarChart4, Settings, ChevronRight, BarChart, HelpCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Custom FileBarChart icon since it's not in Lucide
+function FileBarChart(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+      <path d="M8 13v5" />
+      <path d="M12 9v9" />
+      <path d="M16 11v7" />
+    </svg>
+  );
+}
 
 export default function DashboardPage() {
   const { data: session } = useSession({
-    required: true, 
+    required: true,
     onUnauthenticated() {
-      window.location.href = "/auth/login";
-    }
+      window.location.href = '/auth/login';
+    },
   });
-  
+
   const [stats, setStats] = useState({
     userCount: 0,
     blogPosts: 0,
@@ -40,12 +65,12 @@ export default function DashboardPage() {
           totalLeads: 42,
         });
       } catch (err) {
-        console.error("Error fetching dashboard stats:", err);
+        console.error('Error fetching dashboard stats:', err);
       }
     };
-    
+
     if (session) {
-      console.log("User is authenticated, fetching stats");
+      console.log('User is authenticated, fetching stats');
       fetchStats();
     }
   }, [session]);
@@ -59,21 +84,17 @@ export default function DashboardPage() {
       </div>
     );
   }
-  
-  const isAdmin = ["admin", "super_admin"].includes(session?.user?.role as string);
-  
+
+  const isAdmin = ['admin', 'super_admin'].includes(session?.user?.role as string);
+
   return (
     <div className="container py-6">
       <h1 className="text-3xl font-bold mb-6">Dashboard Overview</h1>
       <div className="flex items-end justify-between mb-8">
-        <p className="text-muted-foreground">
-          Welcome back, {session.user?.email}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Role: {session.user?.role}
-        </p>
+        <p className="text-muted-foreground">Welcome back, {session.user?.email}</p>
+        <p className="text-xs text-muted-foreground">Role: {session.user?.role}</p>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
         {/* Stats Cards */}
         <Card>
@@ -157,11 +178,25 @@ export default function DashboardPage() {
             <span>User Management</span>
           </Link>
         </Button>
-        
+
         <Button className="h-auto py-4 px-6 flex flex-col items-center gap-2" asChild>
           <Link href="/dashboard/blog/new">
             <FileText className="h-6 w-6 mb-1" />
             <span>Create Blog Post</span>
+          </Link>
+        </Button>
+
+        <Button className="h-auto py-4 px-6 flex flex-col items-center gap-2" asChild>
+          <Link href="/dashboard/analytics">
+            <BarChart className="h-6 w-6 mb-1" />
+            <span>View Analytics</span>
+          </Link>
+        </Button>
+
+        <Button className="h-auto py-4 px-6 flex flex-col items-center gap-2" asChild>
+          <Link href="/dashboard/reports">
+            <FileBarChart className="h-6 w-6 mb-1" />
+            <span>Generate Reports</span>
           </Link>
         </Button>
         
@@ -171,7 +206,14 @@ export default function DashboardPage() {
             <span>View Leads</span>
           </Link>
         </Button>
-        
+
+        <Button className="h-auto py-4 px-6 flex flex-col items-center gap-2" asChild>
+          <Link href="/dashboard/help">
+            <HelpCircle className="h-6 w-6 mb-1" />
+            <span>Help Center</span>
+          </Link>
+        </Button>
+
         <Button className="h-auto py-4 px-6 flex flex-col items-center gap-2" asChild>
           <Link href="/dashboard/settings">
             <Settings className="h-6 w-6 mb-1" />
@@ -194,30 +236,38 @@ export default function DashboardPage() {
                 <span className="text-sm font-medium">New user registered</span>
                 <span className="text-xs text-muted-foreground">2 hours ago</span>
               </div>
-              <p className="text-sm text-muted-foreground">User john.doe@example.com has registered</p>
+              <p className="text-sm text-muted-foreground">
+                User john.doe@example.com has registered
+              </p>
             </div>
-            
+
             <div className="border-b pb-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium">Blog post published</span>
                 <span className="text-xs text-muted-foreground">Yesterday</span>
               </div>
-              <p className="text-sm text-muted-foreground">New post &quot;Getting Started with OSINT&quot; was published</p>
+              <p className="text-sm text-muted-foreground">
+                New post &quot;Getting Started with OSINT&quot; was published
+              </p>
             </div>
-            
+
             <div className="pb-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium">Lead form submission</span>
                 <span className="text-xs text-muted-foreground">2 days ago</span>
               </div>
-              <p className="text-sm text-muted-foreground">New contact form submission from jane.smith@company.com</p>
+              <p className="text-sm text-muted-foreground">
+                New contact form submission from jane.smith@company.com
+              </p>
             </div>
           </div>
         </CardContent>
         <CardFooter>
-          <Button variant="outline" className="w-full">View All Activity</Button>
+          <Button variant="outline" className="w-full">
+            View All Activity
+          </Button>
         </CardFooter>
       </Card>
     </div>
   );
-} 
+}

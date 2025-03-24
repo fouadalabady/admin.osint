@@ -1,0 +1,92 @@
+# OSINT Dashboard Documentation
+
+Welcome to the documentation for the OSINT Dashboard project. This comprehensive guide covers the technical architecture, security considerations, and implementation details of the dashboard and agency website.
+
+## Core Documentation
+
+| Document                                                    | Description                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Project Architecture](project-architecture.md)             | Overview of system architecture, component diagrams, and data flows       |
+| [Security Model](security-model.md)                         | Security implementation details, threat models, and mitigation strategies |
+| [Testing Guidelines](testing-guidelines.md)                 | Testing approaches, examples, and best practices                          |
+| [Supabase Local Development](supabase-local-development.md) | Guide for setting up and using Supabase locally                           |
+
+## Password Reset System
+
+The password reset flow has been built with reliability, security, and user experience in mind. It implements a dual-delivery approach using both Supabase Auth and custom SMTP email services.
+
+### Key Features
+
+- **Dual-Delivery Email System**
+  - Primary: Supabase Auth's built-in email service
+  - Fallback: Custom SMTP email delivery
+- **Multiple Reset Methods**
+  - Link-based reset (Supabase PKCE flow)
+  - Code-based reset (custom verification code)
+- **Security Considerations**
+  - Time-limited tokens (1 hour validity)
+  - One-time use verification codes
+  - Row-level security policies
+  - IP-based rate limiting
+- **User Experience**
+  - Tabbed interface for reset options
+  - Password strength validation
+  - Clear success/error feedback
+  - Responsive design
+
+### Documentation Map
+
+To understand the password reset system fully, review these documents:
+
+1. **[Project Architecture: Password Reset Flow](project-architecture.md)**
+   - Component diagram
+   - Database schema
+   - Request and verification phases
+   - Error handling and edge cases
+2. **[Security Model: Password Reset Flow](security-model.md)**
+   - Threat modeling
+   - Authentication controls
+   - API security measures
+   - Database security
+   - Audit logging
+3. **[Testing Guidelines: Password Reset Flow](testing-guidelines.md)**
+
+   - Unit testing examples
+   - Integration testing
+   - End-to-end testing
+   - Security testing
+   - Manual testing checklist
+
+4. **[Supabase Local Development](supabase-local-development.md)**
+   - Database migrations
+   - Table creation
+   - Email testing
+   - Troubleshooting
+
+## Implementation Status
+
+The password reset system is fully implemented and includes:
+
+- Frontend UI components for requesting and confirming password resets
+- Backend API endpoints for verification and processing
+- Database tables for storing verification codes
+- Email templates for notifications
+- Security measures and rate limiting
+- Comprehensive testing
+
+## Additional Resources
+
+- [API Documentation](api-documentation.md)
+- [User Roles & Permissions](user-roles.md)
+- [Deployment Guide](deployment.md)
+- [Troubleshooting Common Issues](troubleshooting.md)
+
+## Contributing to Documentation
+
+To improve this documentation:
+
+1. Clone the repository
+2. Create a new branch for your changes
+3. Update the relevant documentation files
+4. Submit a pull request with your changes
+5. Include a clear description of what you've updated or added

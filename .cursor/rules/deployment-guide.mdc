@@ -1,0 +1,241 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Deployment Guide
+
+This document outlines the deployment process for the OSINT Dashboard & Agency Website, with a specific focus on deploying to Coolify.
+
+## Deployment Overview
+
+The project uses a continuous deployment (CD) workflow integrating GitHub with Coolify to automate the build and deployment process. This guide will walk through both automated deployment via CI/CD and manual deployment options.
+
+## Prerequisites
+
+- A GitHub repository with your project code
+- A Coolify account and server configured
+- GitHub Actions secrets configured for your repository
+
+## Setting Up Coolify
+
+### 1. Initial Coolify Setup
+
+1. Log in to your Coolify dashboard
+2. Create a new project for your application
+3. Select "Deploy from Git repository"
+4. Connect your GitHub repository
+
+### 2. Environment Configuration
+
+Create the following environment variables in Coolify:
+
+| Variable                        | Description                 | Example                            |
+| ------------------------------- | --------------------------- | ---------------------------------- |
+| `NEXTAUTH_URL`                  | Base URL for NextAuth.js    | `https://app.yourdomain.com`       |
+| `NEXTAUTH_SECRET`               | Secret key for NextAuth     | `your-generated-secret`            |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL        | `https://your-project.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key      | `eyJh...`                          |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key   | `eyJh...`                          |
+| `SMTP_HOST`                     | SMTP server host            | `smtp.example.com`                 |
+| `SMTP_PORT`                     | SMTP server port            | `587`                              |
+| `SMTP_USER`                     | SMTP username               | `your-smtp-user`                   |
+| `SMTP_PASSWORD`                 | SMTP password               | `your-smtp-password`               |
+| `EMAIL_FROM`                    | From email address          | `noreply@yourdomain.com`           |
+| `RECAPTCHA_SITE_KEY`            | Google reCAPTCHA site key   | `6Lc...`                           |
+| `RECAPTCHA_SECRET_KEY`          | Google reCAPTCHA secret key | `6Lc...`                           |
+| `NEXT_PUBLIC_DEFAULT_LOCALE`    | Default language            | `en`                               |
+| `NEXT_PUBLIC_AVAILABLE_LOCALES` | Available languages         | `en,ar`                            |
+| `NODE_ENV`                      | Environment name            | `production`                       |
+
+### 3. Build Configuration
+
+Configure the build settings in Coolify:
+
+1. **Build Command**: `npm run build`
+2. **Output Directory**: `.next`
+3. **Node Version**: 18.x
+4. **Install Command**: `npm ci`
+5. **Start Command**: `npm start`
+
+### 4. Deployment Webhook
+
+Create a deployment webhook in Coolify:
+
+1. Navigate to your application settings
+2. Go to "Deployment" tab
+3. Find the "Webhook URL" section
+4. Copy the webhook URL for use in GitHub Actions
+
+## Continuous Deployment with GitHub Actions
+
+### 1. GitHub Actions Workflow
+
+The repository contains a pre-configured GitHub Actions workflow file at `.github/workflows/cd.yml`:
+
+```yaml
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Coolify
+        run: |
+          WEBHOOK_URL=${{ steps.env.outputs.environment == 'production' 
+            && secrets.COOLIFY_PROD_WEBHOOK_URL 
+            || secrets.COOLIFY_STAGING_WEBHOOK_URL }}
+
+          curl -X POST $WEBHOOK_URL
+```
+
+### 2. Configure GitHub Secrets
+
+Add the following secrets to your GitHub repository:
+
+1. `COOLIFY_PROD_WEBHOOK_URL`: Your Coolify production environment webhook URL
+2. `COOLIFY_STAGING_WEBHOOK_URL`: Your Coolify staging environment webhook URL
+
+### 3. Deployment Process
+
+The CD workflow will:
+
+1. Trigger on pushes to `main` branch or any tag starting with `v`
+2. Build the application
+3. Determine the environment (staging for main branch, production for tags)
+4. Deploy to the appropriate Coolify environment using webhooks
+
+## Manual Deployment
+
+For manual deployments when needed:
+
+### 1. Build the Application Locally
+
+```bash
+# Install dependencies
+npm ci
+
+# Build the application
+npm run build
+```
+
+### 2. Deploy via Coolify Dashboard
+
+1. Log in to your Coolify dashboard
+2. Navigate to your application
+3. Click "Deploy" button to manually trigger a deployment
+4. Monitor the deployment logs for any issues
+
+### 3. Deploy via Webhook
+
+```bash
+# Use curl to trigger deployment
+curl -X POST https://your-coolify-webhook-url
+```
+
+## Deployment Best Practices
+
+### Blue-Green Deployment
+
+Coolify supports blue-green deployments to minimize downtime:
+
+1. Configure blue-green deployment in Coolify settings
+2. Each deployment creates a new instance
+3. Traffic is switched only after the new instance is healthy
+
+### Environment-Specific Configurations
+
+Use different Coolify resources for each environment:
+
+1. **Production**: Deployed from version tags (e.g., `v1.0.0`)
+2. **Staging**: Deployed from the `main` branch
+3. **Development**: Local environment only, not deployed
+
+### Database Migrations
+
+Handle database migrations carefully:
+
+1. All migrations should be idempotent (can be run multiple times safely)
+2. Test migrations in staging before deploying to production
+3. Include rollback plans for critical migrations
+
+### Monitoring Deployments
+
+Monitor your deployments through:
+
+1. GitHub Actions logs for build status
+2. Coolify deployment logs
+3. Application logs after deployment
+4. Uptime monitoring tools
+
+### Rollback Procedures
+
+If a deployment fails or causes issues:
+
+1. In Coolify dashboard, find the previous deployment
+2. Click "Rollback" to revert to the previous version
+3. Alternatively, trigger a new deployment with a previous version tag
+
+## Troubleshooting
+
+### Common Issues
+
+#### Build Failures
+
+**Problem**: Build fails during GitHub Actions
+**Solution**:
+
+- Check the GitHub Actions logs for specific errors
+- Verify all dependencies are properly installed
+- Ensure environment variables are correctly set
+
+#### Deployment Timeout
+
+**Problem**: Deployment to Coolify times out
+**Solution**:
+
+- Check Coolify server resources
+- Review application startup logs
+- Ensure your application starts properly within the timeout period
+
+#### Environment Variable Issues
+
+**Problem**: Application behaves differently after deployment
+**Solution**:
+
+- Compare environment variables between local and Coolify
+- Check for missing or incorrectly formatted variables
+- Verify secrets are properly passed to the application
+
+## Conclusion
+
+This deployment guide provides a comprehensive overview of deploying the OSINT Dashboard & Agency Website to Coolify using both automated and manual methods. By following these instructions and best practices, you can ensure a smooth, reliable deployment process with minimal downtime.

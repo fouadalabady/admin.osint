@@ -8,21 +8,55 @@ on:
     tags:
       - 'v*'
 
+# Add permissions for creating commit comments
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: write
+
 env:
   NODE_VERSION: '18'
   NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
-  deploy:
-    name: Deploy to Coolify
+  verify:
+    name: Verify Code Quality
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Type Check
+        run: npm run typecheck
+
+      - name: Check Formatting
+        run: npx prettier --check .
+
+  deploy:
+    name: Deploy to Coolify
+    needs: verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Set up Environment Type
         id: env-type
         run: |
@@ -33,24 +67,21 @@ jobs:
             echo "ENV_TYPE=staging" >> $GITHUB_OUTPUT
             echo "Setting deployment to staging environment"
           fi
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
+
       - name: Install Dependencies
         run: npm ci
-      
-      - name: Run Linter (Non-blocking)
-        run: npm run lint:fix || true
-      
+
       - name: Build Next.js App
-        run: npm run coolify-build
+        run: npm run build
         env:
           NEXT_PUBLIC_APP_ENV: ${{ steps.env-type.outputs.ENV_TYPE }}
-      
+
       - name: Determine Version
         id: version
         run: |
@@ -61,7 +92,7 @@ jobs:
             BRANCH=${GITHUB_REF#refs/heads/}
             echo "VERSION=${BRANCH}-${SHORT_SHA}" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Deploy to Coolify (Production)
         if: steps.env-type.outputs.ENV_TYPE == 'production'
         run: |
@@ -69,7 +100,7 @@ jobs:
           curl -X POST ${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }} \
             -H "Content-Type: application/json" \
             -d "{\"version\": \"${{ steps.version.outputs.VERSION }}\", \"environment\": \"production\"}"
-      
+
       - name: Deploy to Coolify (Staging)
         if: steps.env-type.outputs.ENV_TYPE == 'staging'
         run: |
@@ -77,7 +108,7 @@ jobs:
           curl -X POST ${{ secrets.COOLIFY_STAGING_WEBHOOK }} \
             -H "Content-Type: application/json" \
             -d "{\"version\": \"${{ steps.version.outputs.VERSION }}\", \"environment\": \"staging\"}"
-      
+
       - name: Create Deployment Status Comment
         uses: actions/github-script@v6
         with:
@@ -88,17 +119,17 @@ jobs:
             const envUrl = environment === 'production' 
               ? '${{ secrets.PRODUCTION_URL }}' 
               : '${{ secrets.STAGING_URL }}';
-            
+
             const { owner, repo } = context.repo;
             const sha = context.sha;
-            
+
             await github.rest.repos.createCommitComment({
               owner,
               repo,
               commit_sha: sha,
               body: `🚀 Deployed to ${environment} (${envUrl}) - Version: ${version}`
             });
-      
+
       - name: Notify on Failure
         if: failure()
         uses: actions/github-script@v6
@@ -107,10 +138,10 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const sha = context.sha;
-            
+
             await github.rest.repos.createCommitComment({
               owner,
               repo,
               commit_sha: sha,
               body: `❌ Deployment to ${{ steps.env-type.outputs.ENV_TYPE }} failed. Check the [workflow logs](https://github.com/${owner}/${repo}/actions/runs/${context.runId}) for details.`
-            }); 
+            });

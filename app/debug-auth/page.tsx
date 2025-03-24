@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut, getSession } from 'next-auth/react';
@@ -16,26 +16,28 @@ export default function DebugAuthPage() {
   useEffect(() => {
     console.log('Debug page - session status:', status);
     console.log('Debug page - session data:', session);
-    
+
     setSessionData(JSON.stringify({ status, session }, null, 2));
-    
+
     // Get session from server-side
-    getSession().then((serverSession) => {
+    getSession().then(serverSession => {
       console.log('Server session:', serverSession);
-      setSessionData(prev => prev + '\n\nServer Session:\n' + JSON.stringify(serverSession, null, 2));
+      setSessionData(
+        prev => prev + '\n\nServer Session:\n' + JSON.stringify(serverSession, null, 2)
+      );
     });
   }, [session, status]);
-  
+
   // Check cookies
   useEffect(() => {
     try {
       setCookies(document.cookie || 'No cookies found');
-      
+
       // Check localStorage tokens
       const nextAuthSession = localStorage.getItem('next-auth.session-token');
       const csrfToken = localStorage.getItem('next-auth.csrf-token');
       const callbackUrl = localStorage.getItem('next-auth.callback-url');
-      
+
       setTokens({
         'next-auth.session-token': nextAuthSession,
         'next-auth.csrf-token': csrfToken,
@@ -45,7 +47,7 @@ export default function DebugAuthPage() {
       setCookies(`Error reading cookies: ${e}`);
     }
   }, []);
-  
+
   const testDashboardNavigation = () => {
     try {
       setDirectNavigationResults(prev => [...prev, 'Attempting to navigate to /dashboard...']);
@@ -54,10 +56,13 @@ export default function DebugAuthPage() {
       setDirectNavigationResults(prev => [...prev, `Error navigating: ${e}`]);
     }
   };
-  
+
   const testLoginSignIn = async () => {
     try {
-      setDirectNavigationResults(prev => [...prev, 'Attempting direct signIn with redirect: true...']);
+      setDirectNavigationResults(prev => [
+        ...prev,
+        'Attempting direct signIn with redirect: true...',
+      ]);
       await signIn('credentials', {
         redirect: true,
         email: 'fouadelabady@gmail.com',
@@ -68,7 +73,7 @@ export default function DebugAuthPage() {
       setDirectNavigationResults(prev => [...prev, `Error signing in: ${e}`]);
     }
   };
-  
+
   const handleSignOut = async () => {
     try {
       setDirectNavigationResults(prev => [...prev, 'Signing out...']);
@@ -82,20 +87,24 @@ export default function DebugAuthPage() {
   return (
     <div className="container py-8">
       <h1 className="text-2xl font-bold mb-6">Authentication Debugging</h1>
-      
+
       <div className="grid gap-4 mb-6">
         <Button onClick={testDashboardNavigation}>Test Direct Navigation to Dashboard</Button>
-        <Button onClick={testLoginSignIn} variant="secondary">Test Direct Sign In</Button>
-        <Button onClick={handleSignOut} variant="destructive">Sign Out</Button>
+        <Button onClick={testLoginSignIn} variant="secondary">
+          Test Direct Sign In
+        </Button>
+        <Button onClick={handleSignOut} variant="destructive">
+          Sign Out
+        </Button>
       </div>
-      
+
       <div className="grid gap-6">
         {directNavigationResults.map((result, i) => (
           <div key={i} className="p-2 bg-muted rounded text-sm">
             {result}
           </div>
         ))}
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Session Status: {status}</CardTitle>
@@ -106,7 +115,7 @@ export default function DebugAuthPage() {
             </pre>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Cookies</CardTitle>
@@ -117,7 +126,7 @@ export default function DebugAuthPage() {
             </pre>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>LocalStorage Tokens</CardTitle>
@@ -131,4 +140,4 @@ export default function DebugAuthPage() {
       </div>
     </div>
   );
-} 
+}

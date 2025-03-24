@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -9,12 +9,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import {
-  Alert,
-  AlertDescription,
-} from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from "lucide-react";
+} from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 enum RegistrationStage {
   INITIAL = 'initial',
@@ -24,16 +21,16 @@ enum RegistrationStage {
 
 export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const [stage, setStage] = useState<RegistrationStage>(RegistrationStage.INITIAL);
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState('');
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "user",
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'user',
   });
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,27 +40,27 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      setError('Password must be at least 8 characters long');
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: formData.email,
@@ -75,15 +72,16 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
+        throw new Error(data.error || 'Registration failed');
       }
 
-      setSuccess("Registration successful! Please verify your email.");
+      setSuccess('Registration successful! Please verify your email.');
       setUserId(data.userId);
       setStage(RegistrationStage.OTP_VERIFICATION);
     } catch (err: Error | unknown) {
-      console.error("Registration error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to create account. Please try again.";
+      console.error('Registration error:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create account. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -92,35 +90,36 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/verify-otp", {
-        method: "POST",
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           userId,
           email: formData.email,
           otp,
-          purpose: "email_verification",
+          purpose: 'email_verification',
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "OTP verification failed");
+        throw new Error(data.error || 'OTP verification failed');
       }
 
       setSuccess(data.message);
       setStage(RegistrationStage.PENDING_APPROVAL);
     } catch (err: Error | unknown) {
-      console.error("OTP verification error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to verify OTP. Please try again.";
+      console.error('OTP verification error:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to verify OTP. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -173,12 +172,8 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
           disabled={isLoading}
         />
       </div>
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isLoading}
-      >
-        {isLoading ? "Creating Account..." : "Create Account"}
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? 'Creating Account...' : 'Create Account'}
       </Button>
     </form>
   );
@@ -192,7 +187,7 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
           type="text"
           placeholder="Enter the 6-digit code"
           value={otp}
-          onChange={(e) => setOtp(e.target.value)}
+          onChange={e => setOtp(e.target.value)}
           required
           disabled={isLoading}
           maxLength={6}
@@ -200,15 +195,13 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
         />
       </div>
       <div className="text-sm text-muted-foreground">
-        <p>We&apos;ve sent a verification code to <strong>{formData.email}</strong></p>
+        <p>
+          We&apos;ve sent a verification code to <strong>{formData.email}</strong>
+        </p>
         <p className="mt-2">Enter the code to verify your email address.</p>
       </div>
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isLoading}
-      >
-        {isLoading ? "Verifying..." : "Verify Email"}
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? 'Verifying...' : 'Verify Email'}
       </Button>
     </form>
   );
@@ -220,14 +213,9 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
         <p className="mt-2">
           Your email has been verified. Your account is now pending administrator approval.
         </p>
-        <p className="mt-2">
-          You will receive an email when your account has been approved.
-        </p>
+        <p className="mt-2">You will receive an email when your account has been approved.</p>
       </div>
-      <Button
-        className="w-full"
-        onClick={onSwitchToLogin}
-      >
+      <Button className="w-full" onClick={onSwitchToLogin}>
         Back to Login
       </Button>
     </div>
@@ -237,25 +225,25 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
     <Card className="w-full max-w-md">
       {(error || success) && (
         <div className="p-4 border-b">
-          <Alert variant={error ? "destructive" : "default"}>
+          <Alert variant={error ? 'destructive' : 'default'}>
             {error ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-            <AlertDescription>
-              {error || success}
-            </AlertDescription>
+            <AlertDescription>{error || success}</AlertDescription>
           </Alert>
         </div>
       )}
 
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">
-          {stage === RegistrationStage.INITIAL && "Create an account"}
-          {stage === RegistrationStage.OTP_VERIFICATION && "Verify your email"}
-          {stage === RegistrationStage.PENDING_APPROVAL && "Registration pending"}
+          {stage === RegistrationStage.INITIAL && 'Create an account'}
+          {stage === RegistrationStage.OTP_VERIFICATION && 'Verify your email'}
+          {stage === RegistrationStage.PENDING_APPROVAL && 'Registration pending'}
         </CardTitle>
         <CardDescription>
-          {stage === RegistrationStage.INITIAL && "Enter your details to create a new account"}
-          {stage === RegistrationStage.OTP_VERIFICATION && "Enter the verification code sent to your email"}
-          {stage === RegistrationStage.PENDING_APPROVAL && "Your account is awaiting administrator approval"}
+          {stage === RegistrationStage.INITIAL && 'Enter your details to create a new account'}
+          {stage === RegistrationStage.OTP_VERIFICATION &&
+            'Enter the verification code sent to your email'}
+          {stage === RegistrationStage.PENDING_APPROVAL &&
+            'Your account is awaiting administrator approval'}
         </CardDescription>
       </CardHeader>
 
@@ -268,7 +256,7 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
       {stage === RegistrationStage.INITIAL && (
         <CardFooter>
           <div className="text-sm text-center w-full">
-            Already have an account?{" "}
+            Already have an account?{' '}
             <button
               type="button"
               className="text-primary underline cursor-pointer"
@@ -281,4 +269,4 @@ export default function RegistrationForm({ onSwitchToLogin }: { onSwitchToLogin:
       )}
     </Card>
   );
-} 
+}

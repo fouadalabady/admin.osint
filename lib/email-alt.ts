@@ -7,24 +7,24 @@
 export const sendEmailWithResend = async ({
   to,
   subject,
-  html,
 }: {
   to: string;
   subject: string;
-  html: string;
 }) => {
   try {
     console.log(`Sending email to ${to} via direct API call`);
-    
+
     // Use direct fetch to email service API
     // Example using browser fetch for testing - in production you should use server API endpoint
-    const response = await fetch(`/api/test-email-alt?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}`);
+    const response = await fetch(
+      `/api/test-email-alt?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}`
+    );
     const result = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(`Failed to send email: ${result.error || 'Unknown error'}`);
     }
-    
+
     return { success: true, result };
   } catch (error) {
     console.error('Error sending email via alternative service:', error);
@@ -37,7 +37,7 @@ export const sendEmailWithResend = async ({
 export const fallbackEmailOption = (email: string, subject: string) => {
   // Create a mailto link that will open the user's email client
   const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
-  
+
   // Log instructions for manual sending
   console.log(`
     ----------------------------------------
@@ -50,6 +50,6 @@ export const fallbackEmailOption = (email: string, subject: string) => {
     3. Contact support at admin@example.com
     ----------------------------------------
   `);
-  
+
   return mailtoLink;
-}; 
+};

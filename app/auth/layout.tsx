@@ -1,16 +1,12 @@
-import type { Metadata } from "next";
-import { ThemeToggle } from "@/components/theme-toggle";
+import type { Metadata } from 'next';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export const metadata: Metadata = {
-  title: "Authentication - Admin Dashboard",
-  description: "Sign in or create an account for the admin dashboard",
+  title: 'Authentication - Admin Dashboard',
+  description: 'Sign in or create an account for the admin dashboard',
 };
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="py-4 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,4 +25,4 @@ export default function AuthLayout({
       </footer>
     </div>
   );
-} 
+}

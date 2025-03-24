@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import pkg from '../../../package.json';
 
-// Simple health check endpoint for monitoring
+/**
+ * Health check endpoint for monitoring application status
+ * Used by Coolify and other monitoring services to verify application health
+ */
 export async function GET() {
-  const healthInfo = {
-    status: 'healthy',
+  return NextResponse.json({
+    status: 'ok',
     uptime: process.uptime(),
-    timestamp: Date.now(),
-    version: pkg.version || '0.1.0',
-    environment: process.env.NODE_ENV || 'development'
-  };
-
-  return NextResponse.json(healthInfo, { status: 200 });
-} 
+    timestamp: new Date().toISOString(),
+    version: process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0',
+    environment: process.env.NODE_ENV || 'development',
+  });
+}

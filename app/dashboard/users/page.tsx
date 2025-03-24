@@ -1,10 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSession } from 'next-auth/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +13,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
-import { toast } from "sonner";
+} from '@/components/ui/alert-dialog';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -25,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,11 +31,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MoreHorizontal, Search, User, AlertCircle, CheckCircle, UserCheck, UserX, Shield } from "lucide-react";
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  MoreHorizontal,
+  Search,
+  User,
+  AlertCircle,
+  CheckCircle,
+  UserCheck,
+  UserX,
+  Shield,
+} from 'lucide-react';
 
 interface User {
   id: string;
@@ -58,29 +65,24 @@ interface FetchError {
 type UserRole = 'user' | 'admin' | 'super_admin';
 
 export default function UsersPage() {
-  const router = useRouter();
   const { data: session, status } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [dialogAction, setDialogAction] = useState("");
-  const [dialogUserId, setDialogUserId] = useState("");
-  const [dialogUserEmail, setDialogUserEmail] = useState("");
-  const [dialogValue, setDialogValue] = useState("");
+  const [dialogAction, setDialogAction] = useState('');
+  const [dialogUserId, setDialogUserId] = useState('');
+  const [dialogUserEmail, setDialogUserEmail] = useState('');
+  const [dialogValue, setDialogValue] = useState('');
 
   // Check if current user is admin or super_admin
   const userRole = session?.user?.role as UserRole;
   const isAdmin = ['admin', 'super_admin'].includes(userRole);
   const isSuperAdmin = userRole === 'super_admin';
-
-  // Add missing success state
-  const [success, setSuccess] = useState("");
 
   const fetchUsers = async () => {
     try {
@@ -91,9 +93,9 @@ export default function UsersPage() {
       const data = await response.json();
       setUsers(data.users);
     } catch (err: unknown) {
-      console.error("Error fetching users:", err);
+      console.error('Error fetching users:', err);
       const error = err as FetchError;
-      setError(error.message || "Failed to fetch users");
+      setError(error.message || 'Failed to fetch users');
     } finally {
       setIsLoading(false);
     }
@@ -114,88 +116,51 @@ export default function UsersPage() {
       setFilteredUsers(users);
       return;
     }
-    
+
     const lowercaseQuery = searchQuery.toLowerCase();
-    const filtered = users.filter(user => 
-      user.email.toLowerCase().includes(lowercaseQuery) ||
-      user.role.toLowerCase().includes(lowercaseQuery) ||
-      user.status.toLowerCase().includes(lowercaseQuery)
+    const filtered = users.filter(
+      user =>
+        user.email.toLowerCase().includes(lowercaseQuery) ||
+        user.role.toLowerCase().includes(lowercaseQuery) ||
+        user.status.toLowerCase().includes(lowercaseQuery)
     );
-    
+
     setFilteredUsers(filtered);
   }, [users, searchQuery]);
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleUserAction = async (action: string, userId: string, value?: string) => {
     try {
-      setIsDeleting(true);
+      setError('');
+
       const response = await fetch('/api/users', {
-        method: 'DELETE',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete user');
-      }
-
-      toast.success('User deleted successfully');
-      // Refresh the users list
-      fetchUsers();
-    } catch (err: unknown) {
-      console.error("Error deleting user:", err);
-      const error = err as FetchError;
-      toast.error(error.message || "Failed to delete user");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Handle user action (update status, role, or delete)
-  const handleUserAction = async (action: string, userId: string, value?: string) => {
-    try {
-      setError("");
-      setSuccess("");
-      
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ userId, action, value }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || `Failed to ${action} user`);
       }
-      
+
       // Update local state based on action
-      if (action === "deleteUser") {
+      if (action === 'deleteUser') {
         setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
-        setSuccess(`User deleted successfully`);
-      } else if (action === "updateStatus") {
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.id === userId ? { ...user, status: value as string } : user
-          )
+      } else if (action === 'updateStatus') {
+        setUsers(prevUsers =>
+          prevUsers.map(user => (user.id === userId ? { ...user, status: value as string } : user))
         );
-        setSuccess(`User status updated to ${value}`);
-      } else if (action === "updateRole") {
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.id === userId ? { ...user, role: value as string } : user
-          )
+      } else if (action === 'updateRole') {
+        setUsers(prevUsers =>
+          prevUsers.map(user => (user.id === userId ? { ...user, role: value as string } : user))
         );
-        setSuccess(`User role updated to ${value}`);
       }
-      
     } catch (err) {
       console.error(`Error performing ${action}:`, err);
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsDialogOpen(false);
     }
@@ -206,18 +171,18 @@ export default function UsersPage() {
     setDialogAction(action);
     setDialogUserId(userId);
     setDialogUserEmail(userEmail);
-    setDialogValue(value || "");
+    setDialogValue(value || '');
     setIsDialogOpen(true);
   };
 
   // Get badge color based on status
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
+      case 'active':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case "pending":
+      case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "rejected":
+      case 'rejected':
         return <Badge variant="destructive">Rejected</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -227,11 +192,19 @@ export default function UsersPage() {
   // Get badge color based on role
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case "super_admin":
-        return <Badge variant="default" className="bg-purple-600">Super Admin</Badge>;
-      case "admin":
-        return <Badge variant="default" className="bg-blue-600">Admin</Badge>;
-      case "user":
+      case 'super_admin':
+        return (
+          <Badge variant="default" className="bg-purple-600">
+            Super Admin
+          </Badge>
+        );
+      case 'admin':
+        return (
+          <Badge variant="default" className="bg-blue-600">
+            Admin
+          </Badge>
+        );
+      case 'user':
         return <Badge variant="outline">User</Badge>;
       default:
         return <Badge variant="secondary">{role}</Badge>;
@@ -240,7 +213,7 @@ export default function UsersPage() {
 
   // Format date
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Never";
+    if (!dateString) return 'Never';
     return new Date(dateString).toLocaleString();
   };
 
@@ -268,11 +241,7 @@ export default function UsersPage() {
   }
 
   if (error) {
-    return (
-      <div className="p-4 mb-6 text-white bg-red-500 rounded-md">
-        {error}
-      </div>
-    );
+    return <div className="p-4 mb-6 text-white bg-red-500 rounded-md">{error}</div>;
   }
 
   return (
@@ -290,7 +259,7 @@ export default function UsersPage() {
                 placeholder="Search users..."
                 className="w-[250px]"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
@@ -321,19 +290,17 @@ export default function UsersPage() {
               {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    {searchQuery ? "No users found matching your search" : "No users found"}
+                    {searchQuery ? 'No users found matching your search' : 'No users found'}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                filteredUsers.map(user => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span>{user.email}</span>
-                        {user.emailConfirmed && (
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                        )}
+                        {user.emailConfirmed && <CheckCircle className="h-3 w-3 text-green-500" />}
                       </div>
                     </TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
@@ -349,68 +316,76 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          
+
                           <DropdownMenuSeparator />
-                          
+
                           {/* Status actions */}
-                          <DropdownMenuItem 
-                            onClick={() => openDialog("updateStatus", user.id, user.email, "active")}
-                            disabled={user.status === "active"}
+                          <DropdownMenuItem
+                            onClick={() =>
+                              openDialog('updateStatus', user.id, user.email, 'active')
+                            }
+                            disabled={user.status === 'active'}
                           >
                             <UserCheck className="h-4 w-4 mr-2 text-green-500" />
                             Activate User
                           </DropdownMenuItem>
-                          
-                          <DropdownMenuItem 
-                            onClick={() => openDialog("updateStatus", user.id, user.email, "pending")}
-                            disabled={user.status === "pending"}
+
+                          <DropdownMenuItem
+                            onClick={() =>
+                              openDialog('updateStatus', user.id, user.email, 'pending')
+                            }
+                            disabled={user.status === 'pending'}
                           >
                             <User className="h-4 w-4 mr-2 text-amber-500" />
                             Set to Pending
                           </DropdownMenuItem>
-                          
-                          <DropdownMenuItem 
-                            onClick={() => openDialog("updateStatus", user.id, user.email, "rejected")}
-                            disabled={user.status === "rejected"}
+
+                          <DropdownMenuItem
+                            onClick={() =>
+                              openDialog('updateStatus', user.id, user.email, 'rejected')
+                            }
+                            disabled={user.status === 'rejected'}
                           >
                             <UserX className="h-4 w-4 mr-2 text-red-500" />
                             Reject User
                           </DropdownMenuItem>
-                          
+
                           <DropdownMenuSeparator />
-                          
+
                           {/* Role actions */}
-                          <DropdownMenuItem 
-                            onClick={() => openDialog("updateRole", user.id, user.email, "user")}
-                            disabled={user.role === "user"}
+                          <DropdownMenuItem
+                            onClick={() => openDialog('updateRole', user.id, user.email, 'user')}
+                            disabled={user.role === 'user'}
                           >
                             <User className="h-4 w-4 mr-2" />
                             Set as User
                           </DropdownMenuItem>
-                          
-                          <DropdownMenuItem 
-                            onClick={() => openDialog("updateRole", user.id, user.email, "admin")}
-                            disabled={user.role === "admin"}
+
+                          <DropdownMenuItem
+                            onClick={() => openDialog('updateRole', user.id, user.email, 'admin')}
+                            disabled={user.role === 'admin'}
                           >
                             <Shield className="h-4 w-4 mr-2 text-blue-500" />
                             Set as Admin
                           </DropdownMenuItem>
-                          
+
                           {isSuperAdmin && (
-                            <DropdownMenuItem 
-                              onClick={() => openDialog("updateRole", user.id, user.email, "super_admin")}
-                              disabled={user.role === "super_admin"}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                openDialog('updateRole', user.id, user.email, 'super_admin')
+                              }
+                              disabled={user.role === 'super_admin'}
                             >
                               <Shield className="h-4 w-4 mr-2 text-purple-500" />
                               Set as Super Admin
                             </DropdownMenuItem>
                           )}
-                          
+
                           <DropdownMenuSeparator />
-                          
+
                           {/* Delete action */}
-                          <DropdownMenuItem 
-                            onClick={() => openDialog("deleteUser", user.id, user.email)}
+                          <DropdownMenuItem
+                            onClick={() => openDialog('deleteUser', user.id, user.email)}
                             className="text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -432,25 +407,25 @@ export default function UsersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {dialogAction === "deleteUser" 
-                ? "Delete User" 
-                : dialogAction === "updateStatus" 
-                  ? "Change User Status" 
-                  : "Change User Role"}
+              {dialogAction === 'deleteUser'
+                ? 'Delete User'
+                : dialogAction === 'updateStatus'
+                ? 'Change User Status'
+                : 'Change User Role'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {dialogAction === "deleteUser" 
-                ? `Are you sure you want to delete the user ${dialogUserEmail}? This action cannot be undone.` 
-                : dialogAction === "updateStatus" 
-                  ? `Are you sure you want to change the status of user ${dialogUserEmail} to "${dialogValue}"?` 
-                  : `Are you sure you want to change the role of user ${dialogUserEmail} to "${dialogValue}"?`}
+              {dialogAction === 'deleteUser'
+                ? `Are you sure you want to delete the user ${dialogUserEmail}? This action cannot be undone.`
+                : dialogAction === 'updateStatus'
+                ? `Are you sure you want to change the status of user ${dialogUserEmail} to "${dialogValue}"?`
+                : `Are you sure you want to change the role of user ${dialogUserEmail} to "${dialogValue}"?`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => handleUserAction(dialogAction, dialogUserId, dialogValue)}
-              className={dialogAction === "deleteUser" ? "bg-red-600 hover:bg-red-700" : ""}
+              className={dialogAction === 'deleteUser' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
               Confirm
             </AlertDialogAction>
@@ -459,4 +434,4 @@ export default function UsersPage() {
       </AlertDialog>
     </div>
   );
-} 
+}

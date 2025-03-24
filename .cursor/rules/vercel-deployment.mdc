@@ -1,0 +1,230 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Deploying the OSINT Dashboard to Vercel
+
+This guide provides detailed instructions for deploying the OSINT Dashboard to Vercel, a platform optimized for Next.js applications.
+
+## Prerequisites
+
+Before deploying to Vercel, ensure you have:
+
+1. A GitHub account with access to the repository
+2. A Vercel account (can be created at [vercel.com](mdc:https:/vercel.com))
+3. All required environment variables documented in `.env.example`
+4. Completed all items in the pre-deployment section of the [deployment checklist](mdc:deployment-checklist.md)
+
+## Deployment Methods
+
+There are two primary methods for deploying to Vercel:
+
+1. **Automated deployment using the Vercel dashboard** (recommended for most cases)
+2. **Scripted deployment using our custom deploy script** (recommended for automation and CI/CD)
+
+## Method 1: Vercel Dashboard Deployment
+
+### Step 1: Connect Your Repository
+
+1. Log in to your Vercel account
+2. Click "Add New..." > "Project"
+3. Select the GitHub (or GitLab/Bitbucket) option
+4. Authorize Vercel to access your repositories if prompted
+5. Find and select the OSINT Dashboard repository
+
+### Step 2: Configure Project Settings
+
+1. **Framework Preset**: Ensure "Next.js" is selected
+2. **Build Command**: Use `npm run vercel-build` (this uses our optimized build script)
+3. **Output Directory**: Leave as default (`.next`)
+4. **Environment Variables**: Add all required variables from `.env.example`
+   - Ensure you add all variables marked as "Required for Production"
+   - Pay special attention to the following critical variables:
+     - `NEXTAUTH_URL` (should be your production URL)
+     - `NEXTAUTH_SECRET` (generate a secure random string)
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     - `SUPABASE_SERVICE_KEY`
+
+### Step 3: Deploy
+
+1. Click "Deploy"
+2. Wait for the build and deployment to complete
+3. Vercel will provide a preview URL once deployment is successful
+
+### Step 4: Set Up Custom Domain (Optional)
+
+1. In your project dashboard, go to "Settings" > "Domains"
+2. Add your custom domain
+3. Follow the instructions to configure DNS settings
+4. Vercel will automatically provision an SSL certificate
+
+## Method 2: Scripted Deployment
+
+We provide a custom deployment script that streamlines the Vercel deployment process.
+
+### Step 1: Install Dependencies
+
+```bash
+npm install -g vercel
+```
+
+### Step 2: Run the Deployment Script
+
+```bash
+./scripts/deploy-vercel.sh
+```
+
+The script will:
+1. Check if you have the Vercel CLI installed
+2. Authenticate with Vercel if needed
+3. Validate environment variables
+4. Run pre-deployment checks
+5. Deploy to your chosen environment (production, preview, or development)
+
+Follow the interactive prompts provided by the script.
+
+## Configuration Files
+
+### vercel.json
+
+We include a `vercel.json` file in the repository with optimized settings for Vercel:
+
+```json
+{
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm ci",
+  "regions": ["iad1"],
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_VERCEL_ENV": "production",
+      "VERCEL_ENV": "build",
+      "SKIP_ENV_VALIDATION": "true"
+    }
+  }
+}
+```
+
+This configuration:
+- Uses our optimized build command
+- Sets essential build-time environment variables
+- Configures the deployment region (modify if needed)
+
+## Environment Variables
+
+Vercel manages environment variables through its dashboard. Critical variables to set:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NEXTAUTH_URL` | The canonical URL of your site | `https://osint-dashboard.vercel.app` |
+| `NEXTAUTH_SECRET` | Secret for NextAuth.js | `complex-random-string` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://xxxx.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJhbGciOiJIUzI...` |
+| `SUPABASE_SERVICE_KEY` | Supabase service key | `eyJhbGciOiJIUzI...` |
+
+We recommend setting up different environment variable sets for:
+- Production
+- Preview (for staging deployments)
+- Development (for branch deployments)
+
+## Continuous Deployment
+
+Vercel supports automatic deployments when you push to your repository:
+
+- **Production Deployments**: Triggered by pushes to the main branch
+- **Preview Deployments**: Triggered by pull requests and other branches
+
+### GitHub Integration Features
+
+- **PR Comments**: Vercel adds comments to PRs with preview links
+- **Status Checks**: Build status is reported back to GitHub
+- **Deploy Hooks**: Can trigger deployments from external services
+
+## Monitoring and Logs
+
+After deployment, monitor your application:
+
+1. **Logs**: Access logs from the "Deployments" tab
+2. **Analytics**: View performance metrics in the "Analytics" tab
+3. **Functions**: Inspect serverless function performance in the "Functions" tab
+
+## Troubleshooting Common Issues
+
+### Build Failures
+
+1. **Memory Limits**: If builds fail with memory errors, try:
+   - Optimizing your build process
+   - Using the `NODE_OPTIONS='--max-old-space-size=4096'` flag (included in our build script)
+
+2. **Environment Variables**: If you see errors about missing environment variables:
+   - Check that all required variables are defined in the Vercel dashboard
+   - Verify that the values are correct
+   - Ensure any sensitive variables are marked as secrets
+
+3. **Dependency Issues**: If you encounter dependency-related errors:
+   - Check if your Node.js version is compatible
+   - Verify that all dependencies are correctly listed in package.json
+   - Try clearing the Vercel cache by redeploying
+
+### Runtime Issues
+
+1. **API Routes Errors**:
+   - Check that your API routes are correctly handling serverless environments
+   - Verify that database connections are properly managed
+   - Ensure authentication is properly configured
+
+2. **Static Asset Errors**:
+   - Check that assets are properly referenced
+   - Verify that public assets are in the correct directory
+
+## Advanced Configurations
+
+### Edge Functions
+
+For optimal performance, consider using Edge Functions:
+
+```js
+// Example: Converting an API route to an Edge Function
+export const config = {
+  runtime: 'edge',
+};
+```
+
+### Edge Middleware
+
+Implement edge middleware for efficient request handling:
+
+```js
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  // Your middleware logic
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: '/api/:path*',
+};
+```
+
+## Rollback Procedure
+
+If you need to roll back to a previous version:
+
+1. Go to the Vercel dashboard > your project
+2. Navigate to the "Deployments" tab
+3. Find the last successful deployment
+4. Click the three-dot menu and select "Promote to Production"
+5. Confirm the rollback
+
+## Additional Resources
+
+- [Vercel Next.js Documentation](mdc:https:/vercel.com/docs/frameworks/nextjs)
+- [NextAuth.js with Vercel](mdc:https:/next-auth.js.org/deployment#vercel)
+- [Optimizing Static Assets on Vercel](mdc:https:/vercel.com/docs/concepts/next.js/image-optimization)
+- [Vercel CLI Documentation](mdc:https:/vercel.com/docs/cli) 
