@@ -59,6 +59,18 @@ const nextConfig = {
   // Production source maps (disabled for smaller builds, enable for better error tracking)
   productionBrowserSourceMaps: false,
   
+  // Turbopack configuration for development mode
+  experimental: {
+    turbo: {
+      rules: {
+        // Configure Turbopack rules if needed
+      },
+      resolveAlias: {
+        // Add any module aliases needed specifically for Turbopack
+      },
+    },
+  },
+  
   // Optional: Configure webpack if needed
   webpack: (config, { dev, isServer }) => {
     // Note: We use Turbopack for development (npm run dev) and webpack for production builds
