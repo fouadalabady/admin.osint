@@ -21,7 +21,8 @@
     "build:clean": "rm -rf .next && npm run build",
     "coolify-build": "NODE_ENV=production npm run build:clean",
     "fix-code-quality": "npm run format && npm run lint:fix",
-    "build:production": "npm run lint:fix && npm run typecheck && next build"
+    "build:production": "npm run lint:fix && npm run typecheck && next build",
+    "vercel-build": "NODE_OPTIONS='--max-old-space-size=4096' NEXT_PUBLIC_VERCEL_ENV=production VERCEL_ENV=build SKIP_ENV_VALIDATION=1 SKIP_API_VALIDATION=1 next build || (echo 'Build failed! Trying again with debug logs:' && NODE_OPTIONS='--max-old-space-size=4096' NEXT_PUBLIC_VERCEL_ENV=production VERCEL_ENV=build SKIP_ENV_VALIDATION=1 SKIP_API_VALIDATION=1 DEBUG=* next build)"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

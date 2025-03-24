@@ -1,159 +1,153 @@
-# Coolify Deployment Guide
+# Deploying the OSINT Dashboard to Coolify
 
-This document outlines our approach to deploying the OSINT Dashboard to Coolify, with a focus on ensuring error-free builds and successful deployments.
+This guide provides detailed instructions for deploying the OSINT Dashboard to Coolify, a self-hosted alternative to traditional cloud platforms.
 
-## 1. Build Configuration
+## What is Coolify?
 
-### 1.1 Optimized Next.js Configuration
+Coolify is an open-source, self-hostable platform that enables you to run your applications on your own infrastructure. It provides a user-friendly interface for managing deployments, similar to platforms like Vercel or Heroku, but with the advantage of running on servers you control.
 
-Our `next.config.mjs` includes specific optimizations for Coolify deployment:
+## Prerequisites
 
-```javascript
-// Production optimizations
-poweredByHeader: false, // Remove X-Powered-By header
-reactStrictMode: true,
+Before deploying to Coolify, ensure you have:
 
-// Enable output.standalone for better Docker compatibility
-output: 'standalone',
+1. A server running Linux with Docker installed
+2. Coolify installed on your server (see [Coolify Installation Guide](https://coolify.io/docs/installation))
+3. SSH access to your server
+4. A GitHub account with access to the repository
+5. All required environment variables documented in `.env.example`
+6. Completed all items in the pre-deployment section of the [deployment checklist](./deployment-checklist.md)
+
+## Coolify Setup Process
+
+### Step 1: Install Coolify on Your Server
+
+If you haven't already installed Coolify, run the following command on your server:
+
+```bash
+wget -q https://get.coolify.io -O /tmp/install.sh && bash /tmp/install.sh
 ```
 
-The `standalone` output is particularly important for Docker-based deployments on Coolify, as it creates a more efficient container.
+Follow the on-screen instructions to complete the installation.
 
-### 1.2 TypeScript and ESLint Error Handling
+### Step 2: Configure Coolify
 
-During the build process, we temporarily ignore TypeScript errors and ESLint issues to ensure successful builds:
+1. Access the Coolify dashboard (typically at `https://your-server-ip`)
+2. Create an account or log in
+3. Create a new project and team if needed
 
-```javascript
-// Configure ESLint during builds
-eslint: {
-  // Temporarily ignore ESLint during builds to allow deployments
-  // TODO: Re-enable once critical ESLint issues are resolved
-  ignoreDuringBuilds: true,
-},
+### Step 3: Connect Your Repository
 
-// TypeScript type checking configuration
-typescript: {
-  // Temporarily ignore TypeScript errors during build to allow deployment
-  // TODO: Remove this once all TypeScript errors are fixed
-  ignoreBuildErrors: true, 
-},
-```
+1. In the Coolify dashboard, go to "Sources" and add a new GitHub source
+2. Authorize Coolify to access your GitHub repositories
+3. Select the OSINT Dashboard repository
 
-While this allows builds to complete, our development process includes gradually fixing all type errors and linting issues. See `docs/type-checking.md` and `docs/build-process.md` for our approach to code quality.
+## Deploying the OSINT Dashboard
 
-## 2. Build Scripts
+### Step 1: Create a New Service
 
-We've configured several build scripts in `package.json` to handle different scenarios:
+1. From your Coolify dashboard, click "Create New Resource"
+2. Select "Application"
+3. Choose "Next.js" as the application type
+4. Select your GitHub repository
 
-```json
-"build": "FORCE_BUILD=true NODE_ENV=production next build --no-lint",
-"build:force": "FORCE_BUILD=true NODE_ENV=production next build --no-lint",
-"build:production": "npm run lint:fix && npm run typecheck && next build",
-```
+### Step 2: Configure Deployment Settings
 
-For Coolify deployments, we use:
+1. **Base Directory**: Leave empty (or set to `/` if required)
+2. **Build Command**: Set to `npm run coolify-build`
+3. **Start Command**: Set to `npm start`
+4. **Port**: Set to `3000`
+5. **Environment Variables**: Add all required variables from `.env.example`
+   - Ensure you add all variables marked as "Required for Production"
+   - Pay special attention to the following critical variables:
+     - `NEXTAUTH_URL` (should be your production URL)
+     - `NEXTAUTH_SECRET` (generate a secure random string)
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     - `SUPABASE_SERVICE_KEY`
 
-```json
-"coolify-build": "NODE_ENV=production npm run build:clean",
-```
+### Step 3: Configure Advanced Settings
 
-Which combines cleaning the build directory and running the error-tolerant build command.
+1. **Resource Allocation**:
+   - CPU: 1 (minimum) to 2 (recommended)
+   - Memory: 2GB (minimum) to 4GB (recommended)
+   - Swap: 1GB (recommended)
 
-## 3. Coolify Configuration
+2. **Persistent Storage**:
+   - Add a volume for `.next/cache` to improve build performance
+   - Path: `.next/cache`
+   - Name: `next-cache`
 
-### 3.1 coolify.json
+3. **Build & Deployment Settings**:
+   - Enable auto-deployment on push
+   - Set the branch to `main` or your production branch
 
-The `coolify.json` file in the project root defines how Coolify should build and deploy the application:
+### Step 4: Deploy
+
+1. Click "Save" to create the service
+2. Click "Deploy" to start the initial deployment
+3. Monitor the deployment logs for any issues
+
+### Step 5: Configure Domain and SSL
+
+1. In the service details page, go to "Domains"
+2. Add your custom domain
+3. Enable SSL (Let's Encrypt or custom certificate)
+4. Update your DNS records to point to your server's IP
+
+## Configuration Files
+
+### coolify.json
+
+We include a `coolify.json` file in the repository with optimized settings for Coolify:
 
 ```json
 {
   "name": "osint-dashboard",
-  "buildPack": "nodejs",
-  "nodejs": {
-    "version": "18"
-  },
-  "commands": {
-    "install": "npm ci",
-    "build": "npm run build",
-    "start": "npm start"
-  },
-  "environment": {
+  "type": "application",
+  "buildPack": "nextjs",
+  "buildCommand": "npm run coolify-build",
+  "startCommand": "npm start",
+  "port": 3000,
+  "env": {
     "NODE_ENV": "production",
     "NEXT_TELEMETRY_DISABLED": "1"
   },
-  "ports": [
-    {
-      "port": 3000,
-      "protocol": "http",
-      "public": true
-    }
-  ],
-  "persistentStorage": [
+  "volume": [
     {
       "path": ".next/cache",
       "name": "next-cache"
     }
-  ],
-  "healthCheck": {
-    "path": "/api/health",
-    "port": 3000
-  },
-  "resources": {
-    "cpu": 1,
-    "memory": 1024
-  },
-  "deployment": {
-    "cache": true,
-    "restartOnFailure": true,
-    "removeOldVersions": true
-  }
+  ]
 }
 ```
 
-### 3.2 Health Check Endpoint
+### Dockerfile (Optional)
 
-We've implemented a health check endpoint at `/api/health/route.ts` that Coolify uses to verify deployment success:
-
-```typescript
-export async function GET() {
-  return Response.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-    version: process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0',
-    environment: process.env.NODE_ENV || 'development',
-  });
-}
-```
-
-## 4. Dockerfile for Coolify
-
-Our Dockerfile is optimized for Coolify deployments and handles errors gracefully:
+If you prefer to use a custom Dockerfile instead of Coolify's built-in Next.js buildpack, we've included an optimized Dockerfile in the repository:
 
 ```dockerfile
-# Base stage for dependencies
 FROM node:18-alpine AS base
 WORKDIR /app
 
-# Development dependencies stage
+# Dependencies
 FROM base AS deps
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Build stage
+# Build
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
-# Use our error-tolerant build
+ENV NODE_ENV production
 RUN npm run build
 
-# Production runtime stage
+# Production
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -166,66 +160,116 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://localhost:3000/api/health || exit 1
-
 CMD ["node", "server.js"]
 ```
 
-## 5. Error Handling Strategy
+To use this Dockerfile instead of the buildpack:
+1. In your service settings, select "Docker" as the deployment method
+2. Ensure the Dockerfile is detected
 
-### 5.1 Build Failures
+## Continuous Deployment
 
-When a build fails in Coolify:
+Coolify can automatically deploy when you push to your repository:
 
-1. Check the build logs for specific errors
-2. If TypeScript errors are causing failures, ensure the build configuration is set to ignore these errors during build
-3. For package installation failures, ensure node_modules is not in the .dockerignore file
-4. Check for syntax errors or other critical issues that may not be related to typing
+1. In your service settings, enable "Auto Deploy"
+2. Set the branch to deploy from
+3. Configure webhook settings if needed
 
-### 5.2 Handling TypeScript Errors
+## Monitoring and Maintenance
 
-We've implemented a progressive approach to TypeScript errors:
+### Viewing Logs
 
-1. Allow builds to proceed despite errors using `ignoreBuildErrors: true`
-2. Create proper TypeScript definitions in `types/auth.d.ts` and other files
-3. Use proper type assertions in the code, such as `(session?.user?.role as UserRole) === 'super_admin'`
-4. Gradually fix errors in non-critical files
+1. In the Coolify dashboard, select your application
+2. Go to the "Logs" tab to view real-time logs
 
-For detailed guidance, see `docs/type-checking.md`.
+### Restarting or Rebuilding
 
-### 5.3 Runtime Failures
+1. To restart the application, click the "Restart" button
+2. To rebuild and redeploy, click the "Redeploy" button
 
-If the application deploys but doesn't run correctly:
+### Scaling Resources
 
-1. Check the health check endpoint
-2. Examine Coolify logs for runtime errors
-3. Verify environment variables are correctly set in Coolify
+If your application needs more resources:
 
-## 6. Rollback Procedure
+1. Go to your service settings
+2. Update the CPU, memory, and swap allocations
+3. Save changes and restart the service
 
-If a deployment fails or causes issues:
+## Troubleshooting Common Issues
 
-1. Use Coolify's rollback feature to return to the previous working version
-2. Fix the issues locally
-3. Push a new fix commit and allow Coolify to deploy it
+### Build Failures
 
-## 7. Best Practices for Error-Free Deployments
+1. **Memory Issues**: If builds fail due to memory errors:
+   - Increase the memory allocation in service settings
+   - Optimize your build process to use less memory
 
-1. Run `npm run build` locally before pushing to ensure it builds successfully
-2. Include clear comments for temporary type suppression
-3. Use the health check endpoint to verify application status
-4. Maintain comprehensive documentation of known issues in `/docs`
-5. Always test changes in a staging environment before deploying to production
+2. **Environment Variables**: If you see errors about missing environment variables:
+   - Check that all required variables are defined in Coolify
+   - Verify that the values are correct
+   - Check if any variables need to be updated for your deployment environment
 
-## 8. References
+3. **Connectivity Issues**: If the build can't connect to external services:
+   - Check your server's network configuration
+   - Ensure required ports are open in your firewall
+   - Verify that your server can reach external services (Supabase, etc.)
+
+### Runtime Issues
+
+1. **Container Not Starting**:
+   - Check the logs for specific error messages
+   - Verify that the start command is correct
+   - Ensure your application is properly configured for production
+
+2. **Database Connection Issues**:
+   - Verify that your database is accessible from your server
+   - Check connection strings and credentials
+   - Ensure firewall rules allow connections
+
+3. **Performance Problems**:
+   - Monitor resource usage and increase allocations if needed
+   - Consider implementing caching strategies
+   - Use the persistent cache volume to improve build performance
+
+## Backup and Recovery
+
+### Creating Backups
+
+1. Set up a regular backup process for:
+   - Persistent storage volumes
+   - Database data
+   - Environment configuration
+
+2. Use Coolify's backup features or set up custom backup scripts
+
+### Recovery Process
+
+In case of failure:
+
+1. Restore from backups or redeploy the application
+2. Verify that environment variables are correctly configured
+3. Check logs for any errors during recovery
+
+## Advanced Configurations
+
+### Using a Reverse Proxy (Recommended)
+
+For better security and performance, consider placing a reverse proxy like Nginx in front of your application:
+
+1. Configure Nginx to proxy requests to your Coolify service
+2. Set up SSL termination at the Nginx level
+3. Configure caching headers for static assets
+
+### Setting Up a CDN
+
+To improve global performance:
+
+1. Configure a CDN service (like Cloudflare) in front of your application
+2. Set appropriate cache control headers for static assets
+3. Configure your domain to use the CDN
+
+## Additional Resources
 
 - [Coolify Documentation](https://coolify.io/docs)
-- [Next.js Deployment Documentation](https://nextjs.org/docs/deployment)
-- [Docker Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
-- [Our Build Process Guide](./build-process.md)
-- [Our Type Checking Guide](./type-checking.md)
-
-This document should be updated as our deployment processes evolve. 
+- [Docker Documentation](https://docs.docker.com/)
+- [Next.js Production Deployment](https://nextjs.org/docs/deployment)
+- [Nginx Reverse Proxy Configuration](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) 
