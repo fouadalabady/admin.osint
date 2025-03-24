@@ -12,14 +12,11 @@ const nextConfig = {
     // your project has TypeScript errors.
     ignoreBuildErrors: true,
   },
-  // Skip type checking and linting on CI builds
-  experimental: {
-    // Set to false to skip both linting and type checking during builds
-    skipTypechecking: true,
-    skipMiddlewareUrlNormalize: true,
-    // For packages that should be bundled with server components
-    serverComponentsExternalPackages: []
-  }
+  // Move options out of experimental
+  skipMiddlewareUrlNormalize: true,
+  serverExternalPackages: [],
+  // Disable React Strict Mode for now to fix deprecation warnings
+  reactStrictMode: false,
 };
 
 export default nextConfig;
