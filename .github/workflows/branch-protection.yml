@@ -6,6 +6,11 @@ on:
       - main
       - develop
 
+# Add permissions block to allow issue creation
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   check_direct_push:
     runs-on: ubuntu-latest
