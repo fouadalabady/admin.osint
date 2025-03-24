@@ -105,3 +105,41 @@ If users encounter "Email not confirmed" errors despite completing verification:
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## Development
+
+This project uses Next.js with Turbopack for faster development experience.
+
+To start the development server with Turbopack:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+If you encounter any issues with Turbopack, you can fall back to the traditional webpack development server:
+
+```bash
+npm run dev:webpack
+# or
+yarn dev:webpack
+```
+
+## Building for Production
+
+To build the application for production:
+
+```bash
+npm run build
+# or
+yarn build
+```
+
+For Coolify deployments, we use a specialized build command that ensures clean builds:
+
+```bash
+npm run coolify-build
+# or
+yarn coolify-build
+```

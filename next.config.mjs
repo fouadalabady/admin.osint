@@ -61,6 +61,9 @@ const nextConfig = {
   
   // Optional: Configure webpack if needed
   webpack: (config, { dev, isServer }) => {
+    // Note: We use Turbopack for development (npm run dev) and webpack for production builds
+    // Turbopack does not use this webpack config
+    
     // Enable bundle analyzer in analyze mode
     if (process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
