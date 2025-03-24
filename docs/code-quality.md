@@ -1,115 +1,157 @@
-# Code Quality Guidelines
+# Code Quality Guidelines for OSINT Dashboard
 
-This document outlines the code quality standards and procedures for the OSINT Dashboard project. Following these guidelines ensures a clean, maintainable, and error-free codebase.
+This document outlines our approach to code quality, standards for the codebase, and instructions for managing and fixing common issues.
 
-## Code Quality Standards
+## Overview
 
-### 1. Linting Rules
+We maintain high code quality standards to ensure our builds are error-free, especially when deploying with Coolify. Our approach includes:
 
-We use ESLint with the Next.js core web vitals configuration to enforce code quality. The following rules are set to `warn` to highlight issues that should be fixed:
+1. **Static Analysis** via ESLint and TypeScript
+2. **Formatting Standards** via Prettier
+3. **Automated Quality Checks** in CI/CD pipelines
+4. **Developer Tooling** to catch and fix issues early
 
-- `@typescript-eslint/no-explicit-any`: Avoid using `any` type to ensure type safety.
-- `@typescript-eslint/no-unused-vars`: Remove unused variables and imports.
-- `react/no-unescaped-entities`: Properly escape special characters in JSX.
-- `react-hooks/exhaustive-deps`: Specify all dependencies in React hooks.
-- `@typescript-eslint/no-empty-object-type`: Avoid empty interfaces.
+## Code Standards
 
-### 2. TypeScript Type Safety
+### TypeScript
 
-- Always use proper TypeScript types instead of `any`.
-- Define interfaces for all component props.
-- Use type guards when necessary to ensure type safety.
-
-### 3. React Best Practices
-
-- Properly manage dependencies in useEffect hooks.
-- Use proper React component structures and naming.
-- Implement React.memo for performance optimization when appropriate.
-- Follow the single responsibility principle in components.
-
-## Build Process
-
-Our build process enforces code quality through several steps:
-
-1. **Linting**: `npm run lint:fix` runs ESLint to fix and identify issues.
-2. **Type Checking**: `npm run typecheck` ensures TypeScript compliance.
-3. **Formatting**: `npm run format` enforces consistent code style with Prettier.
-4. **Pre-build Checks**: Before building, linting and type checking are run.
-
-## CI/CD Integration
-
-Code quality is enforced in our CI/CD pipelines:
-
-- **CI Workflow**: Runs linting, type checking, and tests before builds.
-- **CD Workflow**: Verifies code quality before deployment.
-- **Docker Build**: Runs linting and type checking within the build process.
-
-## Fixing Common Issues
-
-### Fixing `no-explicit-any` Errors
+- **Strong Typing**: Avoid the use of `any` types. Instead, define proper interfaces or types.
+- **Unknown vs Any**: Use `unknown` instead of `any` when the type is truly unknown.
+- **Type Guards**: Implement type guards when narrowing types, especially for error handling.
 
 ```typescript
-// Before
-function processData(data: any) { ... }
-
-// After
-interface DataType {
-  id: number;
-  name: string;
-  // Define all required properties
+// ❌ Bad - Using any
+function handleError(error: any) {
+  console.error(error.message);
 }
 
-function processData(data: DataType) { ... }
+// ✅ Good - Using type guards with unknown
+function handleError(error: unknown) {
+  if (error instanceof Error) {
+    console.error(error.message);
+  } else {
+    console.error(String(error));
+  }
+}
 ```
 
-### Fixing Unused Variables
+### ESLint Rules
+
+Our ESLint configuration enforces:
+
+- No unused variables or imports
+- No explicit any types
+- No empty interfaces
+- Proper React hooks dependencies
+- Consistent naming conventions
+
+### Fixing Common Issues
+
+#### Unused Variables
 
 ```typescript
-// Before
-import { useState, useEffect, useRef } from 'react';
-// If useRef is not used, remove it
+// ❌ Bad - Unused variable
+const [value, setValue] = useState('');
+// The variable 'value' is never used
 
-// After
-import { useState, useEffect } from 'react';
+// ✅ Good - Either use it or remove it
+const [value, setValue] = useState('');
+return <div>{value}</div>;
+
+// Alternative: Use _ prefix (only if ESLint is configured to allow this)
+const [_value, setValue] = useState('');
 ```
 
-### Fixing React Hooks Dependencies
+#### Type 'any' Issues
 
 ```typescript
-// Before
-useEffect(() => {
-  fetchData(userId);
-}, []); // Missing dependency
+// ❌ Bad - Using any
+function processData(data: any) {
+  return data.value;
+}
 
-// After
-useEffect(() => {
-  fetchData(userId);
-}, [userId]); // Properly specified dependency
+// ✅ Good - Define a proper interface
+interface DataItem {
+  value: string;
+  [key: string]: unknown;
+}
+
+function processData(data: DataItem) {
+  return data.value;
+}
 ```
 
-### Fixing Unescaped Entities
+#### Empty Interfaces
 
-```jsx
-// Before
-<p>Don't forget to escape characters</p>
+```typescript
+// ❌ Bad - Empty interface
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-// After
-<p>Don&apos;t forget to escape characters</p>
+// ✅ Good - Use type alias instead
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 ```
 
-## Development Workflow
+#### React Hooks Dependencies
 
-1. Write code following the standards above.
-2. Run `npm run fix-code-quality` regularly to identify and fix issues.
-3. Address all warnings and errors before committing.
-4. Submit PRs that pass all quality checks.
+```typescript
+// ❌ Bad - Missing dependency
+useEffect(() => {
+  fetchData(userId);
+}, []); // userId is missing in the dependency array
 
-## Tools and Commands
+// ✅ Good - Include all dependencies
+useEffect(() => {
+  fetchData(userId);
+}, [userId]);
+```
 
-- `npm run lint`: Check for linting issues.
-- `npm run lint:fix`: Fix linting issues automatically when possible.
-- `npm run typecheck`: Check for TypeScript errors.
-- `npm run format`: Format code with Prettier.
-- `npm run fix-code-quality`: Run all code quality checks and fixes.
+## Tools for Managing Code Quality
 
-By following these guidelines, we ensure that our codebase remains clean, maintainable, and free of common errors. 
+### Automated Fixes
+
+We've added several npm scripts to help manage code quality:
+
+- `npm run lint`: Run ESLint to identify issues
+- `npm run lint:fix`: Run ESLint and automatically fix issues where possible
+- `npm run format`: Format code with Prettier
+- `npm run typecheck`: Check TypeScript types without compilation
+- `npm run fix-code-quality`: Run both format and lint:fix to resolve common issues
+
+### CI/CD Integration
+
+Our GitHub Actions workflows include code quality checks that must pass before a build can proceed. This ensures that code quality issues don't make it to production.
+
+### Pre-commit Hooks
+
+We recommend setting up pre-commit hooks using husky and lint-staged to catch issues before they're committed:
+
+```bash
+npx husky-init && npm install
+npx husky add .husky/pre-commit "npx lint-staged"
+```
+
+Then configure lint-staged in package.json:
+
+```json
+"lint-staged": {
+  "*.{ts,tsx}": [
+    "prettier --write",
+    "eslint --fix"
+  ]
+}
+```
+
+## Best Practices for Clean Code
+
+1. **Keep components small and focused** 
+2. **Use proper error handling** - always catch errors and provide helpful messages
+3. **Write meaningful comments** for complex logic
+4. **Use consistent naming conventions**
+5. **Organize imports** - group by external, internal, and relative
+6. **Refactor complex functions** into smaller, testable units
+7. **Add proper types for all parameters and return values**
+8. **Follow the React hooks patterns** for handling side effects
+
+## Conclusion
+
+Maintaining high code quality is a team effort. By following these guidelines and using the provided tools, we can ensure our codebase remains clean, maintainable, and error-free through the build and deployment process.
