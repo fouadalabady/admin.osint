@@ -1,12 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, Database, RefreshCw } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle, AlertCircle, Database, RefreshCw } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { UserRole } from "@/types/auth";
 
 export default function SetupPage() {
   const { data: session, status } = useSession();
@@ -16,48 +24,48 @@ export default function SetupPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is a super admin
-  if (status === "loading") {
-    return <div className="flex justify-center items-center min-h-screen">
-      <RefreshCw className="animate-spin h-6 w-6 text-primary" />
-    </div>;
+  if (status === 'loading') {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <RefreshCw className="animate-spin h-6 w-6 text-primary" />
+      </div>
+    );
   }
 
-  if (status === "unauthenticated") {
-    router.replace("/auth/login");
+  if (status === 'unauthenticated') {
+    router.replace('/auth/login');
     return null;
   }
 
-  if (session?.user?.role !== "super_admin") {
+  if ((session?.user?.role as UserRole) !== 'super_admin') {
     return (
       <div className="flex justify-center items-center min-h-screen p-4">
         <Alert variant="destructive" className="max-w-lg">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            Only super administrators can access the setup page.
-          </AlertDescription>
+          <AlertDescription>Only super administrators can access the setup page.</AlertDescription>
         </Alert>
       </div>
     );
   }
 
   const setupOtpTable = async () => {
-    setLoading("otp");
+    setLoading('otp');
     setSuccess(null);
     setError(null);
 
     try {
-      const response = await fetch("/api/db/create-otp-table", {
-        method: "POST",
+      const response = await fetch('/api/db/create-otp-table', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create OTP table");
+        throw new Error(data.error || 'Failed to create OTP table');
       }
 
       setSuccess(`OTP table created successfully: ${data.message}`);
@@ -72,7 +80,8 @@ export default function SetupPage() {
     <div className="container mx-auto py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">Database Setup</h1>
       <p className="text-gray-600 mb-6">
-        This setup wizard will help you initialize your dashboard&apos;s database and create your first admin account.
+        This setup wizard will help you initialize your dashboard&apos;s database and create your
+        first admin account.
       </p>
 
       {success && (
@@ -99,28 +108,25 @@ export default function SetupPage() {
               OTP Verifications Table
             </CardTitle>
             <CardDescription>
-              Sets up the table for storing one-time password verification codes used in password reset.
+              Sets up the table for storing one-time password verification codes used in password
+              reset.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              This will create the <code>otp_verifications</code> table with proper indexes and security policies.
-              Required for the password reset functionality.
+              This will create the <code>otp_verifications</code> table with proper indexes and
+              security policies. Required for the password reset functionality.
             </p>
           </CardContent>
           <CardFooter>
-            <Button 
-              onClick={setupOtpTable} 
-              disabled={loading === "otp"}
-              className="w-full"
-            >
-              {loading === "otp" ? (
+            <Button onClick={setupOtpTable} disabled={loading === 'otp'} className="w-full">
+              {loading === 'otp' ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                   Setting up...
                 </>
               ) : (
-                "Set up OTP Table"
+                'Set up OTP Table'
               )}
             </Button>
           </CardFooter>
@@ -130,4 +136,4 @@ export default function SetupPage() {
       </div>
     </div>
   );
-} 
+}

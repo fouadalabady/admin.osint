@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function POST() {
   try {
@@ -67,24 +67,28 @@ export async function POST() {
 
     // Use Supabase's direct query functionality
     const { error } = await supabase.rpc('exec_sql', { sql: createTableSQL });
-    
+
     if (error) {
-      console.error("Error executing SQL:", error);
+      console.error('Error executing SQL:', error);
       return NextResponse.json(
-        { error: `Failed to create OTP table: ${error.message}` }, 
+        { error: `Failed to create OTP table: ${error.message}` },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Password reset verifications table created successfully" 
+    return NextResponse.json({
+      success: true,
+      message: 'Password reset verifications table created successfully',
     });
   } catch (error) {
-    console.error("Error creating OTP table:", error);
+    console.error('Error creating OTP table:', error);
     return NextResponse.json(
-      { error: `Failed to create OTP table: ${error instanceof Error ? error.message : String(error)}` }, 
+      {
+        error: `Failed to create OTP table: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      },
       { status: 500 }
     );
   }
-} 
+}

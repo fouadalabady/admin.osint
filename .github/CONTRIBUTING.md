@@ -87,6 +87,7 @@ We follow conventional commits for clear, machine-readable commit messages:
 ```
 
 Types include:
+
 - **feat**: A new feature
 - **fix**: A bug fix
 - **docs**: Documentation changes
@@ -97,6 +98,7 @@ Types include:
 - **chore**: Changes to the build process or auxiliary tools
 
 Example:
+
 ```
 feat(auth): add email verification flow
 
@@ -116,6 +118,7 @@ All new features and bug fixes should include tests:
 - **End-to-end tests** for critical user journeys
 
 Run tests with:
+
 ```bash
 # Run all tests
 npm test
@@ -131,4 +134,4 @@ npm run test:watch
 - Include code examples where appropriate
 - Keep documentation up to date with code changes
 
-Thank you for contributing! 
+Thank you for contributing!

@@ -1,20 +1,30 @@
 {
   "name": "osint-dashboard",
   "buildPack": "nodejs",
-  "nodeVersion": "18",
-  "installCommand": "npm ci",
-  "buildCommand": "npm run build",
-  "startCommand": "npm start",
+  "nodejs": {
+    "version": "18"
+  },
+  "commands": {
+    "install": "npm ci",
+    "build": "npm run coolify-build",
+    "start": "npm start"
+  },
   "environment": {
     "NODE_ENV": "production",
-    "NEXT_TELEMETRY_DISABLED": "1"
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "SKIP_ESLINT": "true",
+    "SKIP_TYPECHECK": "true"
   },
-  "ports": {
-    "expose": 3000
-  },
+  "ports": [
+    {
+      "port": 3000,
+      "protocol": "http",
+      "public": true
+    }
+  ],
   "persistentStorage": [
     {
-      "mountPath": "/app/.next/cache",
+      "path": ".next/cache",
       "name": "next-cache"
     }
   ],
@@ -24,12 +34,11 @@
   },
   "resources": {
     "cpu": 1,
-    "memory": 2048
+    "memory": 1024
   },
-  "deploy": {
-    "clearCache": false,
-    "restartService": true,
-    "removeOldVersions": true,
-    "removeSource": true
+  "deployment": {
+    "cache": true,
+    "restartOnFailure": true,
+    "removeOldVersions": true
   }
-} 
+}

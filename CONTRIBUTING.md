@@ -18,17 +18,20 @@ We follow the Git Flow branching model:
 ### 2. Setting Up Your Development Environment
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/fouadalabady/admin.osint.git
    cd admin.osint
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Create a `.env.local` file based on `.env.example`:
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your local configuration
@@ -44,6 +47,7 @@ We follow the Git Flow branching model:
 ### 3. Making Changes
 
 1. Create a new branch for your feature or bugfix:
+
    ```bash
    git checkout -b feature/your-feature-name
    # or
@@ -55,12 +59,14 @@ We follow the Git Flow branching model:
 3. Write tests for your changes when applicable.
 
 4. Run linting and tests locally:
+
    ```bash
    npm run lint
    npm test
    ```
 
 5. Commit your changes with clear, descriptive messages following the [Conventional Commits](https://www.conventionalcommits.org/) standard:
+
    ```bash
    git commit -m "feat: add new authentication feature"
    # or
@@ -68,6 +74,7 @@ We follow the Git Flow branching model:
    ```
 
 6. Push your branch to GitHub:
+
    ```bash
    git push -u origin your-branch-name
    ```
@@ -128,4 +135,4 @@ We follow the Git Flow branching model:
 
 If you have any questions, feel free to open an issue with the "question" label or reach out to the maintainers.
 
-Thank you for contributing to making this project better! 
+Thank you for contributing to making this project better!

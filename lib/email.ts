@@ -15,7 +15,7 @@ const smtpConfig = {
 export const createTransporter = async () => {
   // Create a transporter
   const transporter = nodemailer.createTransport(smtpConfig);
-  
+
   // Verify connection
   try {
     await transporter.verify();
@@ -41,18 +41,18 @@ export const sendEmail = async ({
 }) => {
   try {
     const transporter = await createTransporter();
-    
+
     const info = await transporter.sendMail({
       from: `"Admin Dashboard" <${from}>`,
       to,
       subject,
       html,
     });
-    
+
     console.log('Email sent:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending email:', error);
     return { success: false, error };
   }
-}; 
+};

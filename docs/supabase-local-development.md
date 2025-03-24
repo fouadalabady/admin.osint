@@ -25,6 +25,7 @@ This guide provides detailed instructions for setting up and working with Supaba
    ```
 
    This command will:
+
    - Pull necessary Docker images
    - Start all Supabase services
    - Set up a local PostgreSQL database
@@ -102,8 +103,8 @@ CREATE TABLE IF NOT EXISTS password_reset_verifications (
 ALTER TABLE password_reset_verifications ENABLE ROW LEVEL SECURITY;
 
 -- Create policies
-CREATE POLICY "Service role can manage all verifications" 
-  ON password_reset_verifications 
+CREATE POLICY "Service role can manage all verifications"
+  ON password_reset_verifications
   USING (auth.role() = 'service_role');
 
 -- Create indices for faster lookups
@@ -121,6 +122,7 @@ npx supabase db reset
 ```
 
 This command will:
+
 1. Detect all migration files in the `db/migrations` directory
 2. Apply them in chronological order
 3. Update the database schema
@@ -139,57 +141,60 @@ If you encounter errors during migration:
 
 The `password_reset_verifications` table stores verification codes for password resets:
 
-| Column      | Type        | Description                   |
-|-------------|-------------|-------------------------------|
-| id          | UUID        | Primary key                   |
-| email       | TEXT        | User's email address          |
-| code        | TEXT        | Verification code             |
-| type        | TEXT        | Purpose (e.g. password_reset) |
-| verified    | BOOLEAN     | Whether code has been used    |
-| created_at  | TIMESTAMPTZ | Creation timestamp            |
-| expires_at  | TIMESTAMPTZ | Expiration timestamp          |
+| Column     | Type        | Description                   |
+| ---------- | ----------- | ----------------------------- |
+| id         | UUID        | Primary key                   |
+| email      | TEXT        | User's email address          |
+| code       | TEXT        | Verification code             |
+| type       | TEXT        | Purpose (e.g. password_reset) |
+| verified   | BOOLEAN     | Whether code has been used    |
+| created_at | TIMESTAMPTZ | Creation timestamp            |
+| expires_at | TIMESTAMPTZ | Expiration timestamp          |
 
 ### 2. OTP Verifications
 
 The `otp_verifications` table handles one-time password verification:
 
-| Column      | Type        | Description                   |
-|-------------|-------------|-------------------------------|
-| id          | UUID        | Primary key                   |
-| email       | TEXT        | User's email address          |
-| code        | TEXT        | OTP code                      |
-| type        | TEXT        | Purpose (e.g. login, action)  |
-| verified    | BOOLEAN     | Whether code has been used    |
-| created_at  | TIMESTAMPTZ | Creation timestamp            |
-| expires_at  | TIMESTAMPTZ | Expiration timestamp          |
+| Column     | Type        | Description                  |
+| ---------- | ----------- | ---------------------------- |
+| id         | UUID        | Primary key                  |
+| email      | TEXT        | User's email address         |
+| code       | TEXT        | OTP code                     |
+| type       | TEXT        | Purpose (e.g. login, action) |
+| verified   | BOOLEAN     | Whether code has been used   |
+| created_at | TIMESTAMPTZ | Creation timestamp           |
+| expires_at | TIMESTAMPTZ | Expiration timestamp         |
 
 ### 3. User Registration Requests
 
 The `user_registration_requests` table manages user registration processes:
 
-| Column           | Type        | Description                      |
-|------------------|-------------|----------------------------------|
-| id               | UUID        | Primary key                      |
-| email            | TEXT        | User's email address             |
-| token            | TEXT        | Verification token               |
-| status           | TEXT        | Status (pending, completed, etc) |
-| created_at       | TIMESTAMPTZ | Creation timestamp               |
-| expires_at       | TIMESTAMPTZ | Expiration timestamp             |
-| completed_at     | TIMESTAMPTZ | When registration was completed  |
+| Column       | Type        | Description                      |
+| ------------ | ----------- | -------------------------------- |
+| id           | UUID        | Primary key                      |
+| email        | TEXT        | User's email address             |
+| token        | TEXT        | Verification token               |
+| status       | TEXT        | Status (pending, completed, etc) |
+| created_at   | TIMESTAMPTZ | Creation timestamp               |
+| expires_at   | TIMESTAMPTZ | Expiration timestamp             |
+| completed_at | TIMESTAMPTZ | When registration was completed  |
 
 ## Manual Setup via API
 
 If you prefer to set up tables directly via API:
 
 1. **Start the application**:
+
    ```bash
    npm run dev
    ```
 
 2. **Navigate to setup page**:
+
    ```
    http://localhost:3000/admin/setup
    ```
+
    (You need to be logged in as a super admin)
 
 3. **Use API endpoint**:
@@ -229,7 +234,7 @@ Supabase includes Inbucket, a service that captures all outgoing emails:
 ### Migration Errors
 
 - **Problem**: "Error applying migration"
-  **Solution**: 
+  **Solution**:
   1. Check SQL syntax
   2. Verify table doesn't already exist
   3. Try resetting the database: `npx supabase db reset --force`
@@ -250,9 +255,9 @@ Row-Level Security is enabled on all tables. Here's how to configure policies:
 
 ```sql
 -- Example: Allow users to only see their own data
-CREATE POLICY "Users can view own data" 
-  ON my_table 
-  FOR SELECT 
+CREATE POLICY "Users can view own data"
+  ON my_table
+  FOR SELECT
   USING (auth.uid() = user_id);
 ```
 
@@ -284,4 +289,4 @@ This will open a psql connection to your local Supabase database where you can r
 
 ## Conclusion
 
-This guide covers the essentials for working with Supabase locally, particularly for the authentication and password reset functionality. For additional information, refer to the [Supabase documentation](https://supabase.com/docs) or the [project architecture document](./project-architecture.md). 
+This guide covers the essentials for working with Supabase locally, particularly for the authentication and password reset functionality. For additional information, refer to the [Supabase documentation](https://supabase.com/docs) or the [project architecture document](./project-architecture.md).

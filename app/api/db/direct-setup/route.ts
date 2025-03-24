@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     // Step 1: Create exec_sql function if it doesn't exist
     const createExecSqlResult = await fetch(
-      process.env.NEXT_PUBLIC_SUPABASE_URL + "/rest/v1/rpc/exec",
+      process.env.NEXT_PUBLIC_SUPABASE_URL + '/rest/v1/rpc/exec',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+          'Content-Type': 'application/json',
+          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
           Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({
@@ -64,19 +64,22 @@ export async function GET() {
           `,
         }),
       }
-    ).then((res) => res.json());
+    ).then(res => res.json());
 
-    console.log("Create exec_sql function result:", createExecSqlResult);
+    console.log('Create exec_sql function result:', createExecSqlResult);
 
     // If exec_sql function creation failed, return error
     if (createExecSqlResult.error) {
-      console.error("Failed to create exec_sql function:", createExecSqlResult.error);
-      return NextResponse.json({
-        success: false,
-        message: "Failed to create exec_sql function",
-        details: createExecSqlResult.error,
-        manualSetupRequired: true,
-      }, { status: 500 });
+      console.error('Failed to create exec_sql function:', createExecSqlResult.error);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to create exec_sql function',
+          details: createExecSqlResult.error,
+          manualSetupRequired: true,
+        },
+        { status: 500 }
+      );
     }
 
     // Step 2: Create database tables
@@ -206,65 +209,72 @@ export async function GET() {
     `;
 
     // Execute the SQL through exec_sql function
-    const result = await fetch(
-      process.env.NEXT_PUBLIC_SUPABASE_URL + "/rest/v1/rpc/exec_sql",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          sql: sqlCommands,
-        }),
-      }
-    ).then((res) => res.json());
+    const result = await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL + '/rest/v1/rpc/exec_sql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        sql: sqlCommands,
+      }),
+    }).then(res => res.json());
 
-    console.log("Database setup result:", result);
+    console.log('Database setup result:', result);
 
     // Check if there was an error
     if (result && result.error) {
-      return NextResponse.json({
-        success: false,
-        message: "Failed to set up database tables",
-        error: result.error,
-        step: "tables_creation",
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to set up database tables',
+          error: result.error,
+          step: 'tables_creation',
+        },
+        { status: 500 }
+      );
     }
 
     // Check if the final query returned results indicating tables exist
     const tableCheckResults = result[result.length - 1];
-    const allTablesExist = tableCheckResults && 
-                          tableCheckResults.otp_verifications_exists && 
-                          tableCheckResults.user_registration_requests_exists;
+    const allTablesExist =
+      tableCheckResults &&
+      tableCheckResults.otp_verifications_exists &&
+      tableCheckResults.user_registration_requests_exists;
 
     if (!allTablesExist) {
-      return NextResponse.json({
-        success: false,
-        message: "Database setup incomplete - some tables may not have been created correctly",
-        tableStatus: tableCheckResults,
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Database setup incomplete - some tables may not have been created correctly',
+          tableStatus: tableCheckResults,
+        },
+        { status: 500 }
+      );
     }
 
     // Return success response with detailed information
     return NextResponse.json({
       success: true,
-      message: "Database setup completed successfully",
+      message: 'Database setup completed successfully',
       details: {
-        execSqlFunction: "Created successfully",
+        execSqlFunction: 'Created successfully',
         tableStatus: tableCheckResults,
         otp_verifications_exists: tableCheckResults.otp_verifications_exists,
-        user_registration_requests_exists: tableCheckResults.user_registration_requests_exists
-      }
+        user_registration_requests_exists: tableCheckResults.user_registration_requests_exists,
+      },
     });
   } catch (error) {
-    console.error("Error setting up database:", error);
-    return NextResponse.json({
-      success: false,
-      message: "An unexpected error occurred during database setup",
-      error: error instanceof Error ? error.message : String(error),
-      manualSetupRequired: true,
-    }, { status: 500 });
+    console.error('Error setting up database:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'An unexpected error occurred during database setup',
+        error: error instanceof Error ? error.message : String(error),
+        manualSetupRequired: true,
+      },
+      { status: 500 }
+    );
   }
-} 
+}

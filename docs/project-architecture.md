@@ -14,19 +14,19 @@ The project is a headless admin dashboard and agency website built with modern w
 
 ## Tech Stack
 
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| **Frontend Framework** | Next.js 14+ | Server-side rendering, routing, API routes |
-| **UI Components** | shadcn/ui, Radix UI | Accessible, customizable components |
-| **State Management** | React Context, TanStack Query | Global state and data fetching |
-| **Database** | Supabase (PostgreSQL) | Data storage, real-time subscriptions |
-| **Authentication** | NextAuth.js, Supabase Auth | User management, session handling |
-| **Styling** | Tailwind CSS | Utility-first styling |
-| **Localization** | next-intl, i18n routing | Multi-language support |
-| **Forms** | React Hook Form, Zod | Form handling and validation |
-| **API** | Next.js API Routes, REST | Data operations |
-| **Security** | reCAPTCHA v3, HTTPS, CSRF | Anti-bot, secure communications |
-| **Deployment** | Coolify | Continuous deployment |
+| Category               | Technology                    | Purpose                                    |
+| ---------------------- | ----------------------------- | ------------------------------------------ |
+| **Frontend Framework** | Next.js 14+                   | Server-side rendering, routing, API routes |
+| **UI Components**      | shadcn/ui, Radix UI           | Accessible, customizable components        |
+| **State Management**   | React Context, TanStack Query | Global state and data fetching             |
+| **Database**           | Supabase (PostgreSQL)         | Data storage, real-time subscriptions      |
+| **Authentication**     | NextAuth.js, Supabase Auth    | User management, session handling          |
+| **Styling**            | Tailwind CSS                  | Utility-first styling                      |
+| **Localization**       | next-intl, i18n routing       | Multi-language support                     |
+| **Forms**              | React Hook Form, Zod          | Form handling and validation               |
+| **API**                | Next.js API Routes, REST      | Data operations                            |
+| **Security**           | reCAPTCHA v3, HTTPS, CSRF     | Anti-bot, secure communications            |
+| **Deployment**         | Coolify                       | Continuous deployment                      |
 
 ## Application Structure
 
@@ -192,4 +192,4 @@ Planned architectural enhancements:
 - Microservices for specific high-load components
 - Enhanced real-time capabilities
 - AI-powered content recommendations
-- Edge computing for global performance 
+- Edge computing for global performance

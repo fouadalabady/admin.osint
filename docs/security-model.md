@@ -9,18 +9,21 @@ This document outlines the security architecture and best practices implemented 
 The project uses NextAuth.js integrated with Supabase for secure authentication:
 
 1. **User Registration**:
+
    - Email/password registration with strong password requirements
    - Email verification required before account activation
    - Optional OTP verification for added security
    - Google reCAPTCHA v3 to prevent bot registrations
 
 2. **Login Process**:
+
    - JWT-based authentication with secure token handling
    - Token refresh mechanism for extended sessions
    - Rate limiting to prevent brute force attacks
    - Login activity logging for audit purposes
 
 3. **Multi-Factor Authentication (MFA)**:
+
    - Optional Time-based One-Time Password (TOTP)
    - SMS or email-based verification codes
    - Recovery codes for account access if primary methods are unavailable
@@ -36,17 +39,20 @@ The project uses NextAuth.js integrated with Supabase for secure authentication:
 We implement a comprehensive RBAC system with the following roles:
 
 1. **Super Admin**:
+
    - Complete system access
    - User management capabilities
    - Configuration and settings access
    - Analytics and reporting access
 
 2. **Editor**:
+
    - Content creation and editing
    - Limited user management
    - No access to system configuration
 
 3. **Contributor**:
+
    - Content creation capabilities
    - No publishing rights
    - No user management access
@@ -138,4 +144,4 @@ Our security model undergoes regular reviews and updates based on:
 
 ## Responsible Disclosure
 
-We encourage responsible disclosure of security vulnerabilities. Please report any security concerns to the project maintainers following our responsible disclosure policy. 
+We encourage responsible disclosure of security vulnerabilities. Please report any security concerns to the project maintainers following our responsible disclosure policy.

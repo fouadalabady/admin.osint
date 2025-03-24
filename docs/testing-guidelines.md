@@ -19,10 +19,12 @@ Our testing strategy is built on these principles:
 Unit tests verify the functionality of individual components or functions in isolation.
 
 **Tools:**
+
 - Jest
 - React Testing Library
 
 **Guidelines:**
+
 - Test each component in isolation, mocking dependencies
 - Focus on testing component behavior, not implementation details
 - Coverage requirements: 80% for critical utility functions and components
@@ -36,14 +38,14 @@ describe('PasswordField', () => {
     const { getByLabelText, getByRole } = render(<PasswordField label="Password" />);
     const input = getByLabelText('Password') as HTMLInputElement;
     const toggleButton = getByRole('button', { name: /toggle password visibility/i });
-    
+
     // Initially password is hidden
     expect(input.type).toBe('password');
-    
+
     // Click to show password
     fireEvent.click(toggleButton);
     expect(input.type).toBe('text');
-    
+
     // Click to hide password again
     fireEvent.click(toggleButton);
     expect(input.type).toBe('password');
@@ -56,11 +58,13 @@ describe('PasswordField', () => {
 Integration tests verify that different parts of the application work together as expected.
 
 **Tools:**
+
 - Jest
 - React Testing Library
 - MSW (Mock Service Worker) for API mocking
 
 **Guidelines:**
+
 - Test combinations of components and their interactions
 - Test data flow between components and API calls
 - Use realistic, representative data in tests
@@ -74,15 +78,15 @@ describe('ForgotPassword flow', () => {
     // Setup MSW to intercept API calls
     server.listen();
   });
-  
+
   afterEach(() => {
     server.resetHandlers();
   });
-  
+
   afterAll(() => {
     server.close();
   });
-  
+
   it('should submit email and show success message', async () => {
     // Mock successful API response
     server.use(
@@ -90,13 +94,13 @@ describe('ForgotPassword flow', () => {
         return res(ctx.json({ success: true }));
       })
     );
-    
+
     const { getByLabelText, getByRole, findByText } = render(<ForgotPasswordPage />);
-    
+
     // Fill and submit form
     fireEvent.change(getByLabelText('Email'), { target: { value: 'test@example.com' } });
     fireEvent.click(getByRole('button', { name: /reset password/i }));
-    
+
     // Verify success message appears
     const successMessage = await findByText(/check your email/i);
     expect(successMessage).toBeInTheDocument();
@@ -109,10 +113,12 @@ describe('ForgotPassword flow', () => {
 E2E tests verify the complete user journey through the application.
 
 **Tools:**
+
 - Cypress
 - Playwright
 
 **Guidelines:**
+
 - Focus on critical user flows (login, reset password, form submissions)
 - Test on multiple browsers and screen sizes
 - Use a realistic test environment with seeded data
@@ -125,22 +131,22 @@ describe('Password Reset Flow', () => {
   it('should allow a user to reset their password', () => {
     // Visit forgot password page
     cy.visit('/auth/forgot-password');
-    
+
     // Submit email
     cy.findByLabelText('Email').type('test@example.com');
     cy.findByRole('button', { name: /reset password/i }).click();
-    
+
     // Verify success page
     cy.findByText(/check your email/i).should('be.visible');
-    
+
     // Simulate clicking email link (in a real test, we'd intercept emails)
     cy.visit('/auth/reset-password?token=test-token');
-    
+
     // Enter new password
     cy.findByLabelText('New Password').type('NewSecurePassword123!');
     cy.findByLabelText('Confirm Password').type('NewSecurePassword123!');
     cy.findByRole('button', { name: /update password/i }).click();
-    
+
     // Verify success and redirection
     cy.url().should('include', '/auth/login');
     cy.findByText(/password has been reset/i).should('be.visible');
@@ -153,10 +159,12 @@ describe('Password Reset Flow', () => {
 API tests verify that the API endpoints work correctly.
 
 **Tools:**
+
 - Jest
 - Supertest
 
 **Guidelines:**
+
 - Test all API endpoints for success and error cases
 - Verify request validation, authentication, and authorization
 - Test rate limiting and security features
@@ -171,21 +179,21 @@ describe('POST /api/auth/reset-password', () => {
       .post('/api/auth/reset-password')
       .send({ email: 'test@example.com' })
       .set('Accept', 'application/json');
-    
+
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('success', true);
   });
-  
+
   it('should return 400 for invalid email format', async () => {
     const response = await request(app)
       .post('/api/auth/reset-password')
       .send({ email: 'invalid-email' })
       .set('Accept', 'application/json');
-    
+
     expect(response.status).toBe(400);
     expect(response.body).toHaveProperty('error');
   });
-  
+
   it('should be rate limited after multiple attempts', async () => {
     // First 5 requests should succeed
     for (let i = 0; i < 5; i++) {
@@ -194,17 +202,17 @@ describe('POST /api/auth/reset-password', () => {
         .send({ email: `test${i}@example.com` })
         .set('X-Forwarded-For', '192.168.1.1') // Simulate same IP
         .set('Accept', 'application/json');
-      
+
       expect(response.status).toBe(200);
     }
-    
+
     // 6th request should be rate limited
     const response = await request(app)
       .post('/api/auth/reset-password')
       .send({ email: 'test6@example.com' })
       .set('X-Forwarded-For', '192.168.1.1')
       .set('Accept', 'application/json');
-    
+
     expect(response.status).toBe(429); // Too Many Requests
   });
 });
@@ -215,10 +223,12 @@ describe('POST /api/auth/reset-password', () => {
 Security tests verify that the application is secure against common vulnerabilities.
 
 **Tools:**
+
 - OWASP ZAP
 - Snyk
 
 **Guidelines:**
+
 - Test for common vulnerabilities (XSS, CSRF, SQL injection)
 - Verify proper implementation of authentication and authorization
 - Test security headers and configurations
@@ -234,13 +244,13 @@ describe('CSRF Protection', () => {
       .post('/api/auth/login')
       .send({ email: 'test@example.com', password: 'password123' })
       .set('Accept', 'application/json');
-    
+
     // Attempt to make a POST request without CSRF token
     const response = await request(app)
       .post('/api/user/profile')
       .send({ name: 'Updated Name' })
       .set('Accept', 'application/json');
-    
+
     // Should be rejected with 403 Forbidden
     expect(response.status).toBe(403);
     expect(response.body).toHaveProperty('error', 'Invalid CSRF token');
@@ -253,6 +263,7 @@ describe('CSRF Protection', () => {
 ### Local Testing
 
 1. **Setup local environment**:
+
    ```bash
    npm install
    cp .env.example .env.test.local
@@ -260,13 +271,14 @@ describe('CSRF Protection', () => {
    ```
 
 2. **Run tests**:
+
    ```bash
    # Run unit and integration tests
    npm test
-   
+
    # Run with coverage report
    npm test -- --coverage
-   
+
    # Run E2E tests
    npm run test:e2e
    ```
@@ -276,6 +288,7 @@ describe('CSRF Protection', () => {
 Tests are automatically run in GitHub Actions:
 
 1. **Pull Request Tests**:
+
    - All tests run on every pull request
    - Coverage reports generated
    - E2E tests run against a temporary environment
@@ -329,18 +342,18 @@ Tests are automatically run in GitHub Actions:
 it('should submit the form with valid data', async () => {
   // Render form
   const { getByLabelText, getByRole } = render(<MyForm onSubmit={mockSubmit} />);
-  
+
   // Fill form fields
   fireEvent.change(getByLabelText('Name'), { target: { value: 'Test User' } });
   fireEvent.change(getByLabelText('Email'), { target: { value: 'test@example.com' } });
-  
+
   // Submit form
   fireEvent.click(getByRole('button', { name: /submit/i }));
-  
+
   // Verify submission
   expect(mockSubmit).toHaveBeenCalledWith({
     name: 'Test User',
-    email: 'test@example.com'
+    email: 'test@example.com',
   });
 });
 ```
@@ -352,10 +365,10 @@ it('should submit the form with valid data', async () => {
 it('should display validation errors', async () => {
   // Render form
   const { getByLabelText, getByRole, findByText } = render(<MyForm />);
-  
+
   // Submit without filling required fields
   fireEvent.click(getByRole('button', { name: /submit/i }));
-  
+
   // Verify error messages
   expect(await findByText(/name is required/i)).toBeInTheDocument();
   expect(await findByText(/email is required/i)).toBeInTheDocument();
@@ -369,18 +382,18 @@ it('should display validation errors', async () => {
 it('should load and display data', async () => {
   // Mock API response
   mockAxios.get.mockResolvedValueOnce({
-    data: { users: [{ id: 1, name: 'Test User' }] }
+    data: { users: [{ id: 1, name: 'Test User' }] },
   });
-  
+
   // Render component
   const { findByText } = render(<UserList />);
-  
+
   // Verify loading state
   expect(screen.getByText(/loading/i)).toBeInTheDocument();
-  
+
   // Verify data appears
   expect(await findByText('Test User')).toBeInTheDocument();
-  
+
   // Verify API was called correctly
   expect(mockAxios.get).toHaveBeenCalledWith('/api/users');
 });
@@ -399,14 +412,14 @@ Example test header:
 ```typescript
 /**
  * Password Reset API Tests
- * 
+ *
  * Tests the password reset API endpoints for:
  * - Request password reset
  * - Verify reset codes
  * - Update password
- * 
+ *
  * Expected coverage: 100% of API functionality
- * 
+ *
  * Note: These tests require a running test database with proper
  * migration setup. The tests will create and verify test users.
  */

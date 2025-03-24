@@ -6,4 +6,4 @@ export async function GET() {
     hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
-} 
+}

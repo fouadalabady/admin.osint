@@ -30,7 +30,7 @@ export interface SetupResult extends SQLExecutionResult {
 export async function checkTablesExist(): Promise<TablesExistResult> {
   try {
     const supabase = createServerSupabaseClient();
-    
+
     // Use pg_tables which is more reliable in Supabase
     const { data: otpTable, error: otpError } = await supabase.rpc('exec_sql', {
       sql: `
@@ -39,9 +39,9 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
           WHERE schemaname = 'public' 
           AND tablename = 'otp_verifications'
         ) AS exists
-      `
+      `,
     });
-    
+
     const { data: regTable, error: regError } = await supabase.rpc('exec_sql', {
       sql: `
         SELECT EXISTS (
@@ -49,14 +49,14 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
           WHERE schemaname = 'public' 
           AND tablename = 'user_registration_requests'
         ) AS exists
-      `
+      `,
     });
-    
+
     // Check for errors in either query
     if (otpError || regError) {
       const errorMessage = otpError?.message || regError?.message || 'Unknown error';
-      console.error("Error checking tables:", otpError || regError);
-      
+      console.error('Error checking tables:', otpError || regError);
+
       // Fallback approach - try a direct query
       try {
         // Try a more direct approach without using exec_sql
@@ -65,7 +65,7 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
           .select('tablename')
           .eq('schemaname', 'public')
           .in('tablename', ['otp_verifications', 'user_registration_requests']);
-          
+
         if (directError) {
           return {
             exists: false,
@@ -73,23 +73,24 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
             registrationExists: false,
             tables: [],
             error: directError,
-            message: `Error checking tables: ${directError.message || 'Unknown error'}`
+            message: `Error checking tables: ${directError.message || 'Unknown error'}`,
           };
         }
-        
+
         const tables = data?.map(row => row.tablename) || [];
         const otpExists = tables.includes('otp_verifications');
         const registrationExists = tables.includes('user_registration_requests');
-        
+
         return {
           exists: otpExists && registrationExists,
           otpExists,
           registrationExists,
           tables,
           error: null,
-          message: otpExists && registrationExists 
-            ? "Required tables exist" 
-            : `Missing tables. Found: ${tables.join(', ')}`
+          message:
+            otpExists && registrationExists
+              ? 'Required tables exist'
+              : `Missing tables. Found: ${tables.join(', ')}`,
         };
       } catch {
         // If direct query fails, the tables likely don't exist
@@ -99,38 +100,41 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
           registrationExists: false,
           tables: [],
           error: otpError || regError,
-          message: `Error checking tables: ${errorMessage}`
+          message: `Error checking tables: ${errorMessage}`,
         };
       }
     }
-    
+
     // Process results from RPC calls
     const otpExists = otpTable?.[0]?.exists === true;
     const registrationExists = regTable?.[0]?.exists === true;
     const tables = [];
-    
+
     if (otpExists) tables.push('otp_verifications');
     if (registrationExists) tables.push('user_registration_requests');
-    
+
     return {
       exists: otpExists && registrationExists,
       otpExists,
       registrationExists,
       tables,
       error: null,
-      message: otpExists && registrationExists 
-        ? "Required tables exist" 
-        : `Missing tables. Found: ${tables.join(', ')}`
+      message:
+        otpExists && registrationExists
+          ? 'Required tables exist'
+          : `Missing tables. Found: ${tables.join(', ')}`,
     };
   } catch (error) {
-    console.error("Error checking tables:", error);
+    console.error('Error checking tables:', error);
     return {
       exists: false,
       otpExists: false,
       registrationExists: false,
       tables: [],
       error,
-      message: `Unexpected error checking tables: ${error instanceof Error ? error.message : String(error)}`
+      message: `Unexpected error checking tables: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     };
   }
 }
@@ -143,28 +147,28 @@ export async function checkTablesExist(): Promise<TablesExistResult> {
 export async function executeSQL(sql: string): Promise<SQLExecutionResult> {
   try {
     const supabase = createServerSupabaseClient();
-    
+
     // Try to execute using exec_sql function
     const { error } = await supabase.rpc('exec_sql', { sql });
-    
+
     if (error) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         error,
-        message: `Failed to execute SQL: ${error.message}`
+        message: `Failed to execute SQL: ${error.message}`,
       };
     }
-    
+
     return {
       success: true,
-      message: "SQL executed successfully"
+      message: 'SQL executed successfully',
     };
   } catch (error) {
-    console.error("Unexpected error executing SQL:", error);
-    return { 
-      success: false, 
+    console.error('Unexpected error executing SQL:', error);
+    return {
+      success: false,
       error,
-      message: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`
+      message: `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -176,40 +180,52 @@ export async function executeSQL(sql: string): Promise<SQLExecutionResult> {
 export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
   try {
     const supabase = createServerSupabaseClient();
-    
-    // Execute SQL to create the exec_sql function
-    // Using direct SQL query instead of rpc since the function doesn't exist yet
-    const { error } = await supabase.from('pg_temp').rpc('exec', {
-      query: `
-        CREATE OR REPLACE FUNCTION public.exec_sql(sql text)
-        RETURNS JSONB
-        LANGUAGE plpgsql
-        SECURITY DEFINER
-        AS $$
-        BEGIN
-          EXECUTE sql;
-          RETURN '[]'::JSONB;
-        EXCEPTION
-          WHEN OTHERS THEN
-            RETURN jsonb_build_array(
-              jsonb_build_object(
-                'error', SQLERRM,
-                'detail', SQLSTATE
-              )
-            );
-        END;
-        $$;
-      `
-    });
-    
-    if (error) {
-      console.error("Error creating exec_sql function:", error);
-      
-      // Try fallback direct SQL method
-      try {
-        // Try a raw SQL query approach
-        const { data, error: rawError } = await supabase.auth.admin.executeRawSQL({
-          query: `
+
+    // Try to create the function with a direct query
+    // Note: This is a simplified approach and might not work in all Supabase configurations
+    try {
+      const { error } = await supabase.rpc('exec_sql', {
+        sql: `
+          CREATE OR REPLACE FUNCTION public.exec_sql(sql text)
+          RETURNS JSONB
+          LANGUAGE plpgsql
+          SECURITY DEFINER
+          AS $$
+          BEGIN
+            EXECUTE sql;
+            RETURN '[]'::JSONB;
+          EXCEPTION
+            WHEN OTHERS THEN
+              RETURN jsonb_build_array(
+                jsonb_build_object(
+                  'error', SQLERRM,
+                  'detail', SQLSTATE
+                )
+              );
+          END;
+          $$;
+        `
+      });
+
+      if (!error) {
+        return {
+          success: true,
+          message: 'Created exec_sql function successfully',
+        };
+      }
+    } catch (primaryError) {
+      // First attempt failed, continue to fallback
+      console.warn('Primary method to create function failed:', primaryError);
+    }
+
+    // Fallback: Try with a different approach - using a stored procedure if available
+    try {
+      // Execute a query that might be available in your Supabase instance
+      // This varies based on your Supabase configuration
+      const { error: fallbackError } = await supabase
+        .from('_temp_exec_sql')
+        .insert({ 
+          sql: `
             CREATE OR REPLACE FUNCTION public.exec_sql(sql text)
             RETURNS JSONB
             LANGUAGE plpgsql
@@ -229,39 +245,40 @@ export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
             END;
             $$;
           `
-        });
-        
-        if (rawError) {
-          return {
-            success: false,
-            message: `Failed to create exec_sql function: ${rawError.message}`,
-            error: rawError
-          };
-        }
-        
-        return {
-          success: true,
-          message: "Created exec_sql function successfully using direct SQL"
-        };
-      } catch (fallbackError) {
+        })
+        .select();
+
+      if (fallbackError) {
+        console.error('Error creating exec_sql function with fallback:', fallbackError);
         return {
           success: false,
-          message: `Failed to create exec_sql function: ${error.message}`,
-          error: error
+          message: `Failed to create exec_sql function: ${fallbackError.message}`,
+          error: fallbackError,
         };
       }
+
+      return {
+        success: true,
+        message: 'Created exec_sql function with fallback method',
+      };
+    } catch (error) {
+      console.error('All attempts to create exec_sql function failed:', error);
+      return {
+        success: false,
+        message: `Failed to create exec_sql function: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error,
+      };
     }
-    
-    return {
-      success: true,
-      message: "Created exec_sql function successfully"
-    };
   } catch (error) {
-    console.error("Error creating exec_sql function:", error);
+    console.error('Error creating exec_sql function:', error);
     return {
       success: false,
-      message: `Failed to create exec_sql function: ${error instanceof Error ? error.message : String(error)}`,
-      error
+      message: `Failed to create exec_sql function: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      error,
     };
   }
 }
@@ -273,16 +290,16 @@ export async function initExecSQLFunction(): Promise<SQLExecutionResult> {
 export async function setupRegistrationTables(): Promise<SetupResult> {
   // Check if tables already exist
   const tablesExist = await checkTablesExist();
-  
+
   if (tablesExist.exists) {
     return {
       success: true,
-      message: "Tables already exist",
-      skipReason: "Tables already exist",
-      tables: tablesExist.tables
+      message: 'Tables already exist',
+      skipReason: 'Tables already exist',
+      tables: tablesExist.tables,
     };
   }
-  
+
   // SQL to set up the tables
   const sql = `
     -- Create enum for user status if not exists
@@ -392,27 +409,27 @@ export async function setupRegistrationTables(): Promise<SetupResult> {
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
   `;
-  
+
   const result = await executeSQL(sql);
-  
+
   if (!result.success) {
     return {
       ...result,
-      error: result.error
+      error: result.error,
     };
   }
-  
+
   // Verify the tables were created
   const verification = await checkTablesExist();
-  
+
   return {
     success: verification.exists,
-    message: verification.exists 
-      ? "Tables created successfully" 
-      : "Failed to verify tables were created",
+    message: verification.exists
+      ? 'Tables created successfully'
+      : 'Failed to verify tables were created',
     tables: verification.tables,
     setupResult: result,
     verificationResult: verification,
-    error: verification.exists ? undefined : verification.error
+    error: verification.exists ? undefined : verification.error,
   };
-} 
+}

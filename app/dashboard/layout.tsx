@@ -1,29 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useSession } from "next-auth/react";
-import { signOut } from "next-auth/react";
-import { ThemeToggle } from "@/components/theme-toggle";
-import {
-  LayoutDashboard,
-  Users,
-  Settings,
-  Menu,
-  LogOut,
-  Bell,
-  Database,
-} from "lucide-react";
+import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
+import { useSession } from 'next-auth/react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { LayoutDashboard, Users, Settings, Menu, LogOut, Bell, Database } from 'lucide-react';
+import { UserRole } from '@/types/auth';
 
 interface NavItem {
   title: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ReactNode;
+  requireAdmin?: boolean;
+  requireSuperAdmin?: boolean;
 }
 
 export default function DashboardLayout({
@@ -31,156 +24,146 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Check if user is super admin
-  const isSuperAdmin = session?.user?.role === "super_admin";
-
+  // Fix the type comparison issue using type assertion
+  const isSuperAdmin = (session?.user?.role as UserRole) === 'super_admin';
+  
   // Create navigation items based on user role
-  const getNavItems = () => {
-    const items: NavItem[] = [
-      {
-        title: "Overview",
-        href: "/dashboard",
-        icon: LayoutDashboard,
-      },
-      {
-        title: "Users",
-        href: "/dashboard/users",
-        icon: Users,
-      },
-      {
-        title: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
-      },
-    ];
+  const navItems: NavItem[] = [
+    {
+      title: 'Dashboard',
+      href: '/dashboard',
+      icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
+    },
+    {
+      title: 'Users',
+      href: '/dashboard/users',
+      icon: <Users className="mr-2 h-4 w-4" />,
+      requireAdmin: true,
+    },
+    {
+      title: 'Database Setup',
+      href: '/admin/setup',
+      icon: <Database className="mr-2 h-4 w-4" />,
+      requireSuperAdmin: true,
+    },
+    {
+      title: 'Settings',
+      href: '/dashboard/settings',
+      icon: <Settings className="mr-2 h-4 w-4" />,
+    },
+  ];
 
-    // Add setup link for super admins only
-    if (isSuperAdmin) {
-      items.push({
-        title: "Database Setup",
-        href: "/admin/setup",
-        icon: Database,
-      });
-    }
-
-    return items;
-  };
-
-  const navItems = getNavItems();
+  const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar for desktop */}
-      <aside className="hidden lg:flex w-64 flex-col border-r bg-background">
-        <div className="p-6 border-b">
-          <h2 className="text-2xl font-semibold">Admin</h2>
-        </div>
-        <ScrollArea className="flex-1 py-4">
-          <nav className="grid gap-1 px-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                  pathname === item.href ? "bg-accent" : "transparent"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
-            ))}
-          </nav>
-        </ScrollArea>
-        <div className="p-4 border-t">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{session?.user?.email}</p>
-              <p className="text-xs text-muted-foreground">{session?.user?.role}</p>
-            </div>
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="container flex h-16 items-center justify-between py-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4 md:hidden"
+            >
+              <Menu className="h-4 w-4" />
+              <span className="sr-only">Toggle Menu</span>
+            </button>
+            <Link href="/dashboard" className="flex items-center space-x-2">
+              <span className="hidden font-bold sm:inline-block">OSINT Dashboard</span>
+            </Link>
           </div>
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-2"
-            onClick={() => signOut({ callbackUrl: "/auth" })}
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-        </div>
-      </aside>
-
-      {/* Mobile sidebar */}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            className="lg:hidden fixed left-4 top-4 z-40"
-            size="icon"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-0">
-          <div className="p-6 border-b">
-            <h2 className="text-2xl font-semibold">Admin</h2>
-          </div>
-          <ScrollArea className="flex-1 py-4">
-            <nav className="grid gap-1 px-2">
-              {navItems.map((item) => (
+          <nav className="hidden gap-6 md:flex">
+            {navItems
+              .filter(
+                (item) =>
+                  (!item.requireAdmin && !item.requireSuperAdmin) ||
+                  (item.requireAdmin &&
+                    ['admin', 'super_admin'].includes(session?.user?.role as string)) ||
+                  (item.requireSuperAdmin && isSuperAdmin)
+              )
+              .map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setIsOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                    pathname === item.href ? "bg-accent" : "transparent"
+                    buttonVariants({ variant: 'ghost' }),
+                    pathname === item.href
+                      ? 'bg-muted hover:bg-muted'
+                      : 'hover:bg-transparent hover:underline',
+                    'justify-start'
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  {item.icon}
                   {item.title}
                 </Link>
               ))}
-            </nav>
-          </ScrollArea>
-          <div className="p-4 border-t">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{session?.user?.email}</p>
-                <p className="text-xs text-muted-foreground">{session?.user?.role}</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={() => signOut({ callbackUrl: "/auth" })}
+          </nav>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href="/api/auth/signout"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'icon' }),
+                'hover:bg-transparent'
+              )}
             >
               <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
+              <span className="sr-only">Sign Out</span>
+            </Link>
+            <Link
+              href="/dashboard/notifications"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'icon' }),
+                'hover:bg-transparent'
+              )}
+            >
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">Notifications</span>
+            </Link>
           </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex items-center justify-between h-16 px-4">
-            <div className="lg:hidden w-6" /> {/* Spacer for mobile menu button */}
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
-              <ThemeToggle />
-            </div>
+        </div>
+      </header>
+      <div className="container grid flex-1 md:grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr]">
+        <aside
+          className={cn(
+            'fixed inset-y-0 left-0 z-30 w-full shrink-0 overflow-y-auto border-r bg-background md:static md:block',
+            isOpen ? 'block' : 'hidden'
+          )}
+        >
+          <div className="sticky top-0 pt-16">
+            <nav className="grid gap-2 p-4 text-lg font-medium">
+              {navItems
+                .filter(
+                  (item) =>
+                    (!item.requireAdmin && !item.requireSuperAdmin) ||
+                    (item.requireAdmin &&
+                      ['admin', 'super_admin'].includes(session?.user?.role as string)) ||
+                    (item.requireSuperAdmin && isSuperAdmin)
+                )
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      buttonVariants({ variant: 'ghost' }),
+                      pathname === item.href
+                        ? 'bg-muted hover:bg-muted'
+                        : 'hover:bg-transparent hover:underline',
+                      'justify-start'
+                    )}
+                  >
+                    {item.icon}
+                    {item.title}
+                  </Link>
+                ))}
+            </nav>
           </div>
-        </header>
-        <main className="flex-1 bg-muted/20">{children}</main>
+        </aside>
+        <main className="flex flex-1 flex-col overflow-hidden p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
-} 
+}

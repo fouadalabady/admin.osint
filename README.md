@@ -6,7 +6,7 @@ Admin dashboard and agency website with headless CMS capabilities, built with Ne
 
 - **Landing Page & Service Pages**: Fully customizable content management
 - **Blog Module**: Create, edit, and publish blog posts with SEO management
-- **Lead Generation Forms**: 
+- **Lead Generation Forms**:
   - Schedule a Demo
   - Contact Us
   - Newsletter Subscription
@@ -65,6 +65,7 @@ This ensures reliability even when one delivery method fails. The system include
 - Password strength validation
 
 For detailed information about the password reset system, see:
+
 - [Password Reset Architecture](docs/project-architecture.md)
 - [Password Reset Security Model](docs/security-model.md)
 - [Password Reset Testing Guide](docs/testing-guidelines.md)
@@ -87,13 +88,16 @@ The user registration flow in this application includes email verification using
 If users encounter "Email not confirmed" errors despite completing verification:
 
 1. Check if the `verify-otp` endpoint correctly updates both:
+
    - `email_verified` flag in the `user_registration_requests` table
    - `email_confirm` flag in Supabase Auth via `supabase.auth.admin.updateUserById`
 
 2. Run the email confirmation fix script:
+
    ```
    node scripts/fix-all-user-emails.js
    ```
+
    This script identifies users who have verified their email through OTP but whose email confirmation status is not set in Supabase Auth.
 
 3. For individual users, you can use:

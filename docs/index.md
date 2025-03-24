@@ -4,12 +4,12 @@ Welcome to the documentation for the OSINT Dashboard project. This comprehensive
 
 ## Core Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Project Architecture](project-architecture.md) | Overview of system architecture, component diagrams, and data flows |
-| [Security Model](security-model.md) | Security implementation details, threat models, and mitigation strategies |
-| [Testing Guidelines](testing-guidelines.md) | Testing approaches, examples, and best practices |
-| [Supabase Local Development](supabase-local-development.md) | Guide for setting up and using Supabase locally |
+| Document                                                    | Description                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Project Architecture](project-architecture.md)             | Overview of system architecture, component diagrams, and data flows       |
+| [Security Model](security-model.md)                         | Security implementation details, threat models, and mitigation strategies |
+| [Testing Guidelines](testing-guidelines.md)                 | Testing approaches, examples, and best practices                          |
+| [Supabase Local Development](supabase-local-development.md) | Guide for setting up and using Supabase locally                           |
 
 ## Password Reset System
 
@@ -20,17 +20,14 @@ The password reset flow has been built with reliability, security, and user expe
 - **Dual-Delivery Email System**
   - Primary: Supabase Auth's built-in email service
   - Fallback: Custom SMTP email delivery
-  
 - **Multiple Reset Methods**
   - Link-based reset (Supabase PKCE flow)
   - Code-based reset (custom verification code)
-  
 - **Security Considerations**
   - Time-limited tokens (1 hour validity)
   - One-time use verification codes
   - Row-level security policies
   - IP-based rate limiting
-  
 - **User Experience**
   - Tabbed interface for reset options
   - Password strength validation
@@ -46,15 +43,14 @@ To understand the password reset system fully, review these documents:
    - Database schema
    - Request and verification phases
    - Error handling and edge cases
-   
 2. **[Security Model: Password Reset Flow](security-model.md)**
    - Threat modeling
    - Authentication controls
    - API security measures
    - Database security
    - Audit logging
-   
 3. **[Testing Guidelines: Password Reset Flow](testing-guidelines.md)**
+
    - Unit testing examples
    - Integration testing
    - End-to-end testing
@@ -93,4 +89,4 @@ To improve this documentation:
 2. Create a new branch for your changes
 3. Update the relevant documentation files
 4. Submit a pull request with your changes
-5. Include a clear description of what you've updated or added 
+5. Include a clear description of what you've updated or added

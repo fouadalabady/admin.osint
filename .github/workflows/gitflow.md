@@ -16,6 +16,7 @@ This project follows the Git Flow branching model to manage the development work
 ### Feature Development
 
 1. Create a feature branch from `develop`:
+
    ```bash
    git checkout develop
    git pull
@@ -24,6 +25,7 @@ This project follows the Git Flow branching model to manage the development work
 
 2. Work on your feature, committing changes with clear messages
 3. Push your branch to the remote repository:
+
    ```bash
    git push -u origin feature/your-feature-name
    ```
@@ -34,6 +36,7 @@ This project follows the Git Flow branching model to manage the development work
 ### Bug Fixes
 
 1. Create a bugfix branch from `develop`:
+
    ```bash
    git checkout develop
    git pull
@@ -46,6 +49,7 @@ This project follows the Git Flow branching model to manage the development work
 ### Releases
 
 1. When `develop` is ready for release, create a release branch:
+
    ```bash
    git checkout develop
    git pull
@@ -71,6 +75,7 @@ This project follows the Git Flow branching model to manage the development work
 ### Hotfixes
 
 1. For critical issues in production, create a hotfix branch from `main`:
+
    ```bash
    git checkout main
    git pull
@@ -86,4 +91,4 @@ This project follows the Git Flow branching model to manage the development work
 - `main` and `develop` branches are protected
 - Direct pushes to `main` and `develop` are not allowed
 - Pull Requests require at least one reviewer approval
-- Status checks must pass before merging 
+- Status checks must pass before merging

@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
-import nodemailer from "nodemailer";
-import { generateRandomCode } from "@/lib/utils";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase';
+import nodemailer from 'nodemailer';
+import { generateRandomCode } from '@/lib/utils';
+import { z } from 'zod';
 
 // Schema for validating request body
 const resetSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email('Please enter a valid email address'),
 });
 
 // POST /api/auth/reset-password
@@ -16,33 +16,30 @@ export async function POST(request: Request) {
     // Parse and validate request body
     const body = await request.json();
     const validation = resetSchema.safeParse(body);
-    
+
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid email address", details: validation.error.format() },
+        { error: 'Invalid email address', details: validation.error.format() },
         { status: 400 }
       );
     }
-    
+
     const { email } = validation.data;
     const supabase = createServerSupabaseClient();
 
     // Check if user exists before proceeding
     const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
     if (userError) {
-      console.error("Error checking user existence:", userError);
-      return NextResponse.json(
-        { error: "Error checking user account" },
-        { status: 500 }
-      );
+      console.error('Error checking user existence:', userError);
+      return NextResponse.json({ error: 'Error checking user account' }, { status: 500 });
     }
-    
+
     const userExists = userData.users.some(user => user.email === email);
     if (!userExists) {
       // For security reasons, don't tell the user that the email doesn't exist
       // Instead, return a success response as if we sent the email
       return NextResponse.json({
-        message: 'Password reset instructions sent to email'
+        message: 'Password reset instructions sent to email',
       });
     }
 
@@ -53,19 +50,17 @@ export async function POST(request: Request) {
 
     // Store verification code in Supabase (even before sending email)
     try {
-      await supabase
-        .from('password_reset_verifications')
-        .insert({
-          email,
-          code,
-          type: 'password_reset',
-          verified: false,
-          expires_at: expiresAt.toISOString()
-        });
-      
-      console.log("Verification code stored successfully");
+      await supabase.from('password_reset_verifications').insert({
+        email,
+        code,
+        type: 'password_reset',
+        verified: false,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      console.log('Verification code stored successfully');
     } catch (dbError) {
-      console.error("Failed to store verification code:", dbError);
+      console.error('Failed to store verification code:', dbError);
       // Continue anyway to try the email methods
     }
 
@@ -79,12 +74,12 @@ export async function POST(request: Request) {
 
       if (!error) {
         emailSent = true;
-        console.log("Supabase password reset email sent successfully");
+        console.log('Supabase password reset email sent successfully');
       } else {
-        console.error("Supabase password reset failed:", error);
+        console.error('Supabase password reset failed:', error);
       }
     } catch (supabaseError) {
-      console.error("Error with Supabase password reset:", supabaseError);
+      console.error('Error with Supabase password reset:', supabaseError);
     }
 
     // Method 2: Fallback to SMTP if Supabase didn't work
@@ -92,13 +87,13 @@ export async function POST(request: Request) {
       try {
         // Get SMTP configuration from environment variables
         const host = process.env.SMTP_SERVER_HOST || process.env.SMTP_HOST;
-        const port = parseInt(process.env.SMTP_SERVER_PORT || process.env.SMTP_PORT || "587");
+        const port = parseInt(process.env.SMTP_SERVER_PORT || process.env.SMTP_PORT || '587');
         const user = process.env.SMTP_SERVER_USERNAME || process.env.SMTP_USER;
         const pass = process.env.SMTP_SERVER_PASSWORD || process.env.SMTP_PASSWORD;
         const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || user;
-        
+
         if (!host || !user || !pass) {
-          throw new Error("SMTP configuration is incomplete");
+          throw new Error('SMTP configuration is incomplete');
         }
 
         // Configure SMTP transport
@@ -110,7 +105,9 @@ export async function POST(request: Request) {
         });
 
         // Create reset URL with verification code
-        const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?code=${code}&email=${encodeURIComponent(email)}`;
+        const resetUrl = `${
+          process.env.NEXTAUTH_URL
+        }/auth/reset-password?code=${code}&email=${encodeURIComponent(email)}`;
 
         // Send email
         await transport.sendMail({
@@ -139,27 +136,21 @@ export async function POST(request: Request) {
         });
 
         emailSent = true;
-        console.log("SMTP fallback email sent successfully");
+        console.log('SMTP fallback email sent successfully');
       } catch (smtpError) {
-        console.error("Error with SMTP fallback:", smtpError);
+        console.error('Error with SMTP fallback:', smtpError);
       }
     }
 
     if (emailSent) {
       return NextResponse.json({
-        message: 'Password reset instructions sent to email'
+        message: 'Password reset instructions sent to email',
       });
     } else {
-      return NextResponse.json(
-        { error: 'Failed to send password reset email' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to send password reset email' }, { status: 500 });
     }
   } catch (error) {
-    console.error("Unexpected error in reset-password API:", error);
-    return NextResponse.json(
-      { error: 'Failed to process request' },
-      { status: 500 }
-    );
+    console.error('Unexpected error in reset-password API:', error);
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
-} 
+}

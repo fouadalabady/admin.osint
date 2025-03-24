@@ -25,23 +25,23 @@ The project uses a continuous deployment (CD) workflow integrating GitHub with C
 
 Create the following environment variables in Coolify:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NEXTAUTH_URL` | Base URL for NextAuth.js | `https://app.yourdomain.com` |
-| `NEXTAUTH_SECRET` | Secret key for NextAuth | `your-generated-secret` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://your-project.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | `eyJh...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | `eyJh...` |
-| `SMTP_HOST` | SMTP server host | `smtp.example.com` |
-| `SMTP_PORT` | SMTP server port | `587` |
-| `SMTP_USER` | SMTP username | `your-smtp-user` |
-| `SMTP_PASSWORD` | SMTP password | `your-smtp-password` |
-| `EMAIL_FROM` | From email address | `noreply@yourdomain.com` |
-| `RECAPTCHA_SITE_KEY` | Google reCAPTCHA site key | `6Lc...` |
-| `RECAPTCHA_SECRET_KEY` | Google reCAPTCHA secret key | `6Lc...` |
-| `NEXT_PUBLIC_DEFAULT_LOCALE` | Default language | `en` |
-| `NEXT_PUBLIC_AVAILABLE_LOCALES` | Available languages | `en,ar` |
-| `NODE_ENV` | Environment name | `production` |
+| Variable                        | Description                 | Example                            |
+| ------------------------------- | --------------------------- | ---------------------------------- |
+| `NEXTAUTH_URL`                  | Base URL for NextAuth.js    | `https://app.yourdomain.com`       |
+| `NEXTAUTH_SECRET`               | Secret key for NextAuth     | `your-generated-secret`            |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL        | `https://your-project.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key      | `eyJh...`                          |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key   | `eyJh...`                          |
+| `SMTP_HOST`                     | SMTP server host            | `smtp.example.com`                 |
+| `SMTP_PORT`                     | SMTP server port            | `587`                              |
+| `SMTP_USER`                     | SMTP username               | `your-smtp-user`                   |
+| `SMTP_PASSWORD`                 | SMTP password               | `your-smtp-password`               |
+| `EMAIL_FROM`                    | From email address          | `noreply@yourdomain.com`           |
+| `RECAPTCHA_SITE_KEY`            | Google reCAPTCHA site key   | `6Lc...`                           |
+| `RECAPTCHA_SECRET_KEY`          | Google reCAPTCHA secret key | `6Lc...`                           |
+| `NEXT_PUBLIC_DEFAULT_LOCALE`    | Default language            | `en`                               |
+| `NEXT_PUBLIC_AVAILABLE_LOCALES` | Available languages         | `en,ar`                            |
+| `NODE_ENV`                      | Environment name            | `production`                       |
 
 ### 3. Build Configuration
 
@@ -83,18 +83,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build
-        
+
       - name: Determine environment
         id: env
         run: |
@@ -103,13 +103,13 @@ jobs:
           else
             echo "environment=staging" >> $GITHUB_OUTPUT
           fi
-          
+
       - name: Deploy to Coolify
         run: |
           WEBHOOK_URL=${{ steps.env.outputs.environment == 'production' 
             && secrets.COOLIFY_PROD_WEBHOOK_URL 
             || secrets.COOLIFY_STAGING_WEBHOOK_URL }}
-          
+
           curl -X POST $WEBHOOK_URL
 ```
 
@@ -208,6 +208,7 @@ If a deployment fails or causes issues:
 
 **Problem**: Build fails during GitHub Actions
 **Solution**:
+
 - Check the GitHub Actions logs for specific errors
 - Verify all dependencies are properly installed
 - Ensure environment variables are correctly set
@@ -216,6 +217,7 @@ If a deployment fails or causes issues:
 
 **Problem**: Deployment to Coolify times out
 **Solution**:
+
 - Check Coolify server resources
 - Review application startup logs
 - Ensure your application starts properly within the timeout period
@@ -224,10 +226,11 @@ If a deployment fails or causes issues:
 
 **Problem**: Application behaves differently after deployment
 **Solution**:
+
 - Compare environment variables between local and Coolify
 - Check for missing or incorrectly formatted variables
 - Verify secrets are properly passed to the application
 
 ## Conclusion
 
-This deployment guide provides a comprehensive overview of deploying the OSINT Dashboard & Agency Website to Coolify using both automated and manual methods. By following these instructions and best practices, you can ensure a smooth, reliable deployment process with minimal downtime. 
+This deployment guide provides a comprehensive overview of deploying the OSINT Dashboard & Agency Website to Coolify using both automated and manual methods. By following these instructions and best practices, you can ensure a smooth, reliable deployment process with minimal downtime.

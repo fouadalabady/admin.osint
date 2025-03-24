@@ -108,14 +108,14 @@ Additional features include:
 
 ### 5.1 Documentation & Developer Onboarding
 - **Project Documentation:**
-  - Keep the project roadmap, README, and additional docs (e.g., [Project Architecture](docs/project-architecture.md), [Security Model](docs/security-model.md)) updated.
+  - Keep the project roadmap, README, and additional docs (e.g., [Project Architecture](mdc:docs/project-architecture.md), [Security Model](mdc:docs/security-model.md)) updated.
 - **Onboarding:**
   - Ensure new team members understand the project structure, local setup, and CI/CD workflows.
   - Provide clear guidelines for local Supabase setup and environment configurations.
 
 ### 5.2 UI Component & Code Standards
 - **UI Components:**
-  - Use only the components provided by [shadcn/ui](https://ui.shadcn.com) to ensure design consistency.
+  - Use only the components provided by [shadcn/ui](mdc:https:/ui.shadcn.com) to ensure design consistency.
 - **Coding Practices:**
   - Follow auto-formatting guidelines (Prettier, ESLint) and use strong typing (TypeScript recommended) to minimize runtime errors.
 
@@ -191,10 +191,10 @@ By integrating these DevOps practices, the project benefits from a streamlined d
 
 ## 9. References
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [React Documentation](https://reactjs.org/docs/getting-started.html)
-- [Supabase Documentation](https://supabase.com/docs)
-- [NextAuth.js Documentation](https://next-auth.js.org/getting-started/introduction)
-- [shadcn/ui Documentation](https://ui.shadcn.com)
-- [next-intl Documentation](https://github.com/amannn/next-intl)
-- [i18n Routing Documentation](https://nextjs.org/docs/advanced-features/i18n-routing)
+- [Next.js Documentation](mdc:https:/nextjs.org/docs)
+- [React Documentation](mdc:https:/reactjs.org/docs/getting-started.html)
+- [Supabase Documentation](mdc:https:/supabase.com/docs)
+- [NextAuth.js Documentation](mdc:https:/next-auth.js.org/getting-started/introduction)
+- [shadcn/ui Documentation](mdc:https:/ui.shadcn.com)
+- [next-intl Documentation](mdc:https:/github.com/amannn/next-intl)
+- [i18n Routing Documentation](mdc:https:/nextjs.org/docs/advanced-features/i18n-routing)

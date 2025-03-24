@@ -69,7 +69,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
@@ -84,9 +83,6 @@ export default function UsersPage() {
   const userRole = session?.user?.role as UserRole;
   const isAdmin = ['admin', 'super_admin'].includes(userRole);
   const isSuperAdmin = userRole === 'super_admin';
-
-  // Add state for success message
-  const [successMessage, setSuccessMessage] = useState('');
 
   const fetchUsers = async () => {
     try {
@@ -132,39 +128,9 @@ export default function UsersPage() {
     setFilteredUsers(filtered);
   }, [users, searchQuery]);
 
-  const handleDeleteUser = async (userId: string) => {
-    try {
-      setIsDeleting(true);
-      const response = await fetch('/api/users', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete user');
-      }
-
-      toast.success('User deleted successfully');
-      // Refresh the users list
-      fetchUsers();
-    } catch (err: unknown) {
-      console.error('Error deleting user:', err);
-      const error = err as FetchError;
-      toast.error(error.message || 'Failed to delete user');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Handle user action (update status, role, or delete)
   const handleUserAction = async (action: string, userId: string, value?: string) => {
     try {
       setError('');
-      setSuccessMessage('');
 
       const response = await fetch('/api/users', {
         method: 'POST',
@@ -183,17 +149,14 @@ export default function UsersPage() {
       // Update local state based on action
       if (action === 'deleteUser') {
         setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
-        setSuccessMessage(`User deleted successfully`);
       } else if (action === 'updateStatus') {
         setUsers(prevUsers =>
           prevUsers.map(user => (user.id === userId ? { ...user, status: value as string } : user))
         );
-        setSuccessMessage(`User status updated to ${value}`);
       } else if (action === 'updateRole') {
         setUsers(prevUsers =>
           prevUsers.map(user => (user.id === userId ? { ...user, role: value as string } : user))
         );
-        setSuccessMessage(`User role updated to ${value}`);
       }
     } catch (err) {
       console.error(`Error performing ${action}:`, err);

@@ -1,63 +1,70 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { Suspense } from 'react';
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 // Separate component that uses useSearchParams
 function ResetPasswordFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
-    password: "",
-    confirmPassword: "",
-    otp: "",
+    password: '',
+    confirmPassword: '',
+    otp: '',
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
     setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      setError('Password must be at least 8 characters long');
       setIsLoading(false);
       return;
     }
 
     try {
       // Get the access token from the URL
-      const accessToken = searchParams.get("access_token");
-      
+      const accessToken = searchParams.get('access_token');
+
       if (!accessToken) {
-        throw new Error("No access token provided");
+        throw new Error('No access token provided');
       }
 
       // Update the password using the access token
@@ -67,15 +74,16 @@ function ResetPasswordFormContent() {
 
       if (updateError) throw updateError;
 
-      setSuccess("Password has been reset successfully!");
-      
+      setSuccess('Password has been reset successfully!');
+
       // Redirect to auth after a short delay
       setTimeout(() => {
-        router.push("/auth?tab=auth");
+        router.push('/auth?tab=auth');
       }, 2000);
     } catch (err) {
-      console.error("Reset password error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to reset password. Please try again.";
+      console.error('Reset password error:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to reset password. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -86,11 +94,9 @@ function ResetPasswordFormContent() {
     <Card className="w-full max-w-md">
       {(error || success) && (
         <div className="p-4 border-b">
-          <Alert variant={error ? "destructive" : "default"}>
+          <Alert variant={error ? 'destructive' : 'default'}>
             {error ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
-            <AlertDescription>
-              {error || success}
-            </AlertDescription>
+            <AlertDescription>{error || success}</AlertDescription>
           </Alert>
         </div>
       )}
@@ -146,21 +152,14 @@ function ResetPasswordFormContent() {
             />
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? "Resetting Password..." : "Reset Password"}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Resetting Password...' : 'Reset Password'}
           </Button>
         </form>
       </CardContent>
 
       <CardFooter className="flex justify-center">
-        <Button
-          variant="link"
-          onClick={() => router.push("/auth")}
-        >
+        <Button variant="link" onClick={() => router.push('/auth')}>
           Back to Sign In
         </Button>
       </CardFooter>
@@ -175,4 +174,4 @@ export default function ResetPasswordForm() {
       <ResetPasswordFormContent />
     </Suspense>
   );
-} 
+}

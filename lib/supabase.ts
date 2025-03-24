@@ -17,4 +17,4 @@ export const createServerSupabaseClient = () => {
     throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
   }
   return createClient(supabaseUrl, supabaseServiceRoleKey);
-}; 
+};

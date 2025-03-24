@@ -7,6 +7,7 @@ The application implements a robust email verification system for user registrat
 ## Verification Flow
 
 1. **Registration Initiation**:
+
    - User submits registration form with email and password
    - System creates a new user in Supabase Auth with `email_confirm: false`
    - A 6-digit OTP is generated, hashed, and stored in the `otp_verifications` table
@@ -14,6 +15,7 @@ The application implements a robust email verification system for user registrat
    - A pending record is created in `user_registration_requests` table
 
 2. **Email Verification**:
+
    - User receives and enters the OTP code
    - System verifies the OTP by hashing it and comparing against the stored hash
    - Upon successful verification:
@@ -34,14 +36,14 @@ The application implements a robust email verification system for user registrat
 
 **Root Cause**: When users verified their email with the OTP, we were correctly updating the `email_verified` flag in the `user_registration_requests` table, but we were not updating the user's `email_confirm` status in Supabase Auth.
 
-**Solution**: 
+**Solution**:
 
 1. **Updated `verify-otp` Endpoint**: Added code to update `email_confirm` status in Supabase Auth:
+
    ```typescript
-   const { error: updateUserError } = await supabase.auth.admin.updateUserById(
-     userId,
-     { email_confirm: true }
-   );
+   const { error: updateUserError } = await supabase.auth.admin.updateUserById(userId, {
+     email_confirm: true,
+   });
    ```
 
 2. **Created Fix Scripts**:
@@ -53,6 +55,7 @@ The application implements a robust email verification system for user registrat
 **Problem**: Sometimes there's a mismatch between the verification status in the OTP table and the user's email confirmation status in Supabase Auth.
 
 **Solution**: The fix scripts check for:
+
 1. Users who have verified their email through the OTP process (have a `verified_at` timestamp)
 2. Users who have `email_verified: true` in their registration request
 3. But who still have `email_confirm: false` in Supabase Auth
@@ -64,11 +67,13 @@ For these users, the scripts automatically update `email_confirm` to `true`.
 ### `fix-new-user-accounts.js`
 
 This script:
+
 - Identifies users with unconfirmed emails
 - Checks if they have verified their email through OTP
 - Updates their email confirmation status in Supabase Auth
 
 Usage:
+
 ```bash
 node scripts/fix-new-user-accounts.js
 ```
@@ -76,12 +81,14 @@ node scripts/fix-new-user-accounts.js
 ### `fix-all-user-emails.js`
 
 A more comprehensive script that:
+
 - Retrieves all users from Supabase Auth
 - Finds those with unconfirmed emails
 - Checks both `otp_verifications` and `user_registration_requests` tables for verification evidence
 - Updates email confirmation status for verified users
 
 Usage:
+
 ```bash
 node scripts/fix-all-user-emails.js
 ```
@@ -94,4 +101,4 @@ node scripts/fix-all-user-emails.js
 
 3. **Regular Audits**: Periodically run the fix scripts to ensure consistency between verification tables and Supabase Auth.
 
-4. **Testing**: When modifying the verification flow, test both the happy path and error conditions. 
+4. **Testing**: When modifying the verification flow, test both the happy path and error conditions.

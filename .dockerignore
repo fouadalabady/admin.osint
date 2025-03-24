@@ -1,48 +1,73 @@
-# Version control
+# Exclude Git files
 .git
 .github
 .gitignore
-.gitattributes
 
-# Node.js
+# Development and temporary files
+.DS_Store
+.next
 node_modules
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+tsconfig.tsbuildinfo
+.eslintcache
+.vscode
+.idea
+*.log
 
-# Next.js build files
-.next
+# Build output
 out
+dist
+.coverage
+.nyc_output
+coverage
+test-results
 
-# Environment variables
-.env
+# Documentation and development files
+README.md
+LICENSE
+*.md
+docs
+tests
+cypress
+jest.config.js
+.env.example
 .env.local
 .env.development
 .env.test
-.env.production
+next-env.d.ts
+
+# Don't exclude these files
+!.env.production
+!public
+!app
+!components
+!lib
+!middleware.ts
+!types
+!next.config.mjs
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
 .env*.local
 
 # Coolify-specific files
 coolify.json
 
 # OS specific
-.DS_Store
 Thumbs.db
 
 # Editor directories and files
-.idea
-.vscode
 *.swp
 *.swo
 
 # Testing
-coverage
 .nyc_output
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Logs
 logs
@@ -62,6 +87,5 @@ pids
 .pnp.js
 
 # Misc
-.eslintcache
 .node_repl_history
 .yarn-integrity 
