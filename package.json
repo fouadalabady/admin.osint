@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
-    "build": "VERCEL_ENV=build next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "setup-db": "curl -X GET http://localhost:3001/api/db/direct-setup",
@@ -18,7 +18,7 @@
     "clean": "rm -rf .next out",
     "postinstall": "npx patch-package || true",
     "build:clean": "npm run clean && npm run build",
-    "vercel-build": "VERCEL_ENV=build npm run build"
+    "vercel-build": "NEXT_PUBLIC_VERCEL_ENV=production VERCEL_ENV=build next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

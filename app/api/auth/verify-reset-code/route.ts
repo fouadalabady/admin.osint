@@ -1,152 +1,98 @@
-import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { z } from "zod";
+import { NextResponse } from "next/server";
+import { verifyOTP } from "@/lib/otp";
+import { safeBuildExecution } from "@/lib/build-helpers";
 
-// Schema for validating request body
-const resetSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  code: z.string().min(6, "Code must be at least 6 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-// POST /api/auth/verify-reset-code
-// Request body: { email: string, code: string, password: string }
+/**
+ * API endpoint to verify password reset codes
+ * 
+ * @param request - The HTTP request object
+ * @returns NextResponse with the verification result
+ */
 export async function POST(request: Request) {
-  try {
-    // Parse request body
-    const body = await request.json();
-    
-    // Validate input with Zod
-    const validation = resetSchema.safeParse(body);
-    if (!validation.success) {
-      return NextResponse.json(
-        { 
-          error: "Invalid request data", 
-          details: validation.error.format() 
-        },
-        { status: 400 }
-      );
-    }
-
-    const { email, code, password } = validation.data;
-    
-    // Initialize Supabase client
-    const supabase = createServerSupabaseClient();
-    
-    // First verify the reset code
-    const { data: verificationData, error: verificationError } = await supabase
-      .from("password_reset_verifications")
-      .select("*")
-      .eq("email", email)
-      .eq("code", code)
-      .eq("type", "password_reset")
-      .eq("verified", false)
-      .gte("expires_at", new Date().toISOString())
-      .single();
-    
-    if (verificationError || !verificationData) {
-      // Check if code already used
-      const { data: usedCode } = await supabase
-        .from("password_reset_verifications")
-        .select("*")
-        .eq("email", email)
-        .eq("code", code)
-        .eq("verified", true)
-        .limit(1);
-        
-      if (usedCode && usedCode.length > 0) {
-        return NextResponse.json(
-          { error: "This verification code has already been used" },
-          { status: 400 }
-        );
-      }
-      
-      // Check if code expired
-      const { data: expiredCode } = await supabase
-        .from("password_reset_verifications")
-        .select("*")
-        .eq("email", email)
-        .eq("code", code)
-        .lt("expires_at", new Date().toISOString())
-        .limit(1);
-        
-      if (expiredCode && expiredCode.length > 0) {
-        return NextResponse.json(
-          { error: "This verification code has expired. Please request a new code." },
-          { status: 400 }
-        );
-      }
-        
-      return NextResponse.json(
-        { 
-          error: "Invalid verification code",
-          details: verificationError?.message || "Code not found or already used"
-        },
-        { status: 400 }
-      );
-    }
-    
-    // Get user by email
-    const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error("Error retrieving users:", userError);
-      return NextResponse.json(
-        { error: "Error retrieving user", details: userError.message },
-        { status: 500 }
-      );
-    }
-    
-    const user = userData.users?.find(u => u.email === email);
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found with this email address" },
-        { status: 404 }
-      );
-    }
-    
+  return safeBuildExecution(async () => {
     try {
-      // Update user's password
-      const { error: updateError } = await supabase.auth.admin.updateUserById(
-        user.id,
-        { 
-          password,
-          email_confirm: true // Ensure email is confirmed when resetting password
-        }
-      );
+      // Extract email and reset code from request
+      const { email, code } = await request.json();
       
-      if (updateError) {
-        throw updateError;
+      // Validate inputs
+      if (!email || !code) {
+        return NextResponse.json({ 
+          error: "Email and reset code are required" 
+        }, { status: 400 });
       }
       
-      // Mark the verification code as verified
-      const { error: markVerifiedError } = await supabase
-        .from("password_reset_verifications")
-        .update({ verified: true })
-        .eq("id", verificationData.id);
+      // Get Supabase client
+      const supabase = createServerSupabaseClient();
       
-      if (markVerifiedError) {
-        console.error("Error marking code as verified:", markVerifiedError);
-        // Continue anyway since the password was updated successfully
+      // Find matching reset verification record
+      const { data: resetRecords, error: queryError } = await supabase
+        .from('password_reset_verifications')
+        .select('*')
+        .eq('email', email)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (queryError) {
+        console.error("Error querying reset records:", queryError);
+        return NextResponse.json({ 
+          error: "Failed to verify reset code", 
+          details: queryError.message
+        }, { status: 500 });
+      }
+      
+      if (!resetRecords || resetRecords.length === 0) {
+        return NextResponse.json({ 
+          error: "No reset code found" 
+        }, { status: 404 });
+      }
+      
+      const resetRecord = resetRecords[0];
+      
+      // Check if code has expired
+      const expiresAt = new Date(resetRecord.expires_at);
+      const now = new Date();
+      
+      if (now > expiresAt) {
+        return NextResponse.json({ 
+          error: "Reset code has expired" 
+        }, { status: 400 });
+      }
+      
+      // Verify reset code
+      const isValid = verifyOTP(code, email, resetRecord.otp_hash);
+      
+      if (!isValid) {
+        return NextResponse.json({ 
+          error: "Invalid reset code" 
+        }, { status: 400 });
+      }
+      
+      // Delete the reset record to prevent reuse
+      const { error: deleteError } = await supabase
+        .from('password_reset_verifications')
+        .delete()
+        .eq('id', resetRecord.id);
+      
+      if (deleteError) {
+        console.error("Error deleting reset record:", deleteError);
+        // Continue as this is not critical
       }
       
       return NextResponse.json({
-        success: true,
-        message: "Password has been reset successfully"
+        message: "Reset code verified successfully",
+        userId: resetRecord.user_id
       });
-    } catch (error: any) {
-      console.error("Error updating password:", error);
+    } catch (error: unknown) {
+      const err = error instanceof Error 
+        ? error 
+        : new Error(String(error));
+      
+      console.error("Error in reset code verification:", err);
       return NextResponse.json(
-        { error: "Failed to update password", details: error.message },
+        { error: err.message || "Failed to verify reset code" },
         { status: 500 }
       );
     }
-  } catch (error: any) {
-    console.error("Unexpected error in reset password verification:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred", details: error.message },
-      { status: 500 }
-    );
-  }
+  });
 } 
