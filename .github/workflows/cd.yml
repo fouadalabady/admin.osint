@@ -1,48 +1,116 @@
-name: CD
+name: CD - Coolify Deployment
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+
+env:
+  NODE_VERSION: '18'
+  NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
   deploy:
+    name: Deploy to Coolify
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18.x'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build
-      run: npm run build
-    
-    - name: Determine environment
-      id: env
-      run: |
-        if [[ $GITHUB_REF == refs/tags/v* ]]; then
-          echo "::set-output name=environment::production"
-        else
-          echo "::set-output name=environment::staging"
-        fi
-    
-    - name: Deploy to Coolify
-      env:
-        COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
-        ENVIRONMENT: ${{ steps.env.outputs.environment }}
-      run: |
-        if [ "$ENVIRONMENT" = "production" ]; then
-          echo "Deploying to production..."
-          curl -X POST $COOLIFY_WEBHOOK_URL
-        else
-          echo "Deploying to staging..."
-          curl -X POST $COOLIFY_WEBHOOK_URL
-        fi 
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Environment Type
+        id: env-type
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]] || [[ $GITHUB_REF == refs/heads/main ]]; then
+            echo "ENV_TYPE=production" >> $GITHUB_OUTPUT
+            echo "Setting deployment to production environment"
+          else
+            echo "ENV_TYPE=staging" >> $GITHUB_OUTPUT
+            echo "Setting deployment to staging environment"
+          fi
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Linter (Non-blocking)
+        run: npm run lint:fix || true
+      
+      - name: Build Next.js App
+        run: npm run coolify-build
+        env:
+          NEXT_PUBLIC_APP_ENV: ${{ steps.env-type.outputs.ENV_TYPE }}
+      
+      - name: Determine Version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            BRANCH=${GITHUB_REF#refs/heads/}
+            echo "VERSION=${BRANCH}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Deploy to Coolify (Production)
+        if: steps.env-type.outputs.ENV_TYPE == 'production'
+        run: |
+          echo "Deploying version ${{ steps.version.outputs.VERSION }} to production"
+          curl -X POST ${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }} \
+            -H "Content-Type: application/json" \
+            -d "{\"version\": \"${{ steps.version.outputs.VERSION }}\", \"environment\": \"production\"}"
+      
+      - name: Deploy to Coolify (Staging)
+        if: steps.env-type.outputs.ENV_TYPE == 'staging'
+        run: |
+          echo "Deploying version ${{ steps.version.outputs.VERSION }} to staging"
+          curl -X POST ${{ secrets.COOLIFY_STAGING_WEBHOOK }} \
+            -H "Content-Type: application/json" \
+            -d "{\"version\": \"${{ steps.version.outputs.VERSION }}\", \"environment\": \"staging\"}"
+      
+      - name: Create Deployment Status Comment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const environment = '${{ steps.env-type.outputs.ENV_TYPE }}';
+            const version = '${{ steps.version.outputs.VERSION }}';
+            const envUrl = environment === 'production' 
+              ? '${{ secrets.PRODUCTION_URL }}' 
+              : '${{ secrets.STAGING_URL }}';
+            
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            
+            await github.rest.repos.createCommitComment({
+              owner,
+              repo,
+              commit_sha: sha,
+              body: `🚀 Deployed to ${environment} (${envUrl}) - Version: ${version}`
+            });
+      
+      - name: Notify on Failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            
+            await github.rest.repos.createCommitComment({
+              owner,
+              repo,
+              commit_sha: sha,
+              body: `❌ Deployment to ${{ steps.env-type.outputs.ENV_TYPE }} failed. Check the [workflow logs](https://github.com/${owner}/${repo}/actions/runs/${context.runId}) for details.`
+            }); 

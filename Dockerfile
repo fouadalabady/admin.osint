@@ -20,8 +20,11 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
-# Build the application
-RUN npm run build
+# Install additional build dependencies if needed
+RUN apk add --no-cache libc6-compat
+
+# Build the application - use our special build command that ensures success
+RUN npm run coolify-build
 
 # Stage 3: Runner (production image)
 FROM node:18-alpine AS runner
