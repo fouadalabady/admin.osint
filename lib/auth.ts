@@ -1,129 +1,91 @@
-/**
- * Auth configuration for Next-Auth
- * This file exports the auth options from the original location for easier imports
- * with fallback options in case the import fails during build time
- */
+import { NextAuthOptions } from "next-auth";
+import { createClient } from "@/lib/supabase/server";
+import Credentials from "next-auth/providers/credentials";
+import { cookies } from "next/headers";
+import { UserRole } from "@/types/auth";
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { AuthOptions, User } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { z } from 'zod';
-import { Database } from './supabase/types';
-import { UserRole } from './types/auth';
-
-type DbUser = Database['public']['Tables']['users']['Row'];
-
-// Validate credentials schema
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-// Export auth options
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
+  pages: {
+    signIn: "/auth/login",
+    signOut: "/auth/logout",
+    error: "/auth/error",
+    verifyRequest: "/auth/verify-request",
+    newUser: "/auth/new-user"
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   providers: [
-    CredentialsProvider({
-      id: 'credentials',
-      name: 'Credentials',
+    Credentials({
+      name: "credentials",
       credentials: {
-        email: {
-          label: 'Email',
-          type: 'email',
-          placeholder: 'Enter your email',
-        },
-        password: {
-          label: 'Password',
-          type: 'password',
-          placeholder: 'Enter your password',
-        },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
-      async authorize(credentials): Promise<User | null> {
-        try {
-          // Validate credentials
-          const { email, password } = credentialsSchema.parse(credentials);
-
-          // Get Supabase client
-          const supabase = createServerSupabaseClient();
-
-          // Sign in with credentials
-          const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (signInError || !authData.user) {
-            throw new Error(signInError?.message || 'Invalid credentials');
-          }
-
-          // Get user data from our users table
-          const { data, error: userError } = await supabase
-            .from('users')
-            .select()
-            .match({ id: authData.user.id });
-
-          if (userError || !data || data.length === 0) {
-            throw new Error('User not found in database');
-          }
-
-          // Type guard to ensure we have a valid user
-          const dbUser = data[0] as unknown as DbUser;
-          if (!dbUser?.id || !dbUser?.role) {
-            throw new Error('Invalid user data');
-          }
-
-          // Map database role to UserRole type
-          const dbRole = dbUser.role as string;
-          let role: UserRole = 'user'; // Default to user role
-
-          if (dbRole === 'super_admin' || dbRole === 'admin' || dbRole === 'editor' || dbRole === 'user') {
-            role = dbRole as UserRole;
-          }
-
-          // Return user object that matches our User type
-          const user: User = {
-            id: authData.user.id,
-            email: authData.user.email ?? '',
-            name: dbUser.user_metadata?.name ?? null,
-            image: dbUser.user_metadata?.avatar_url ?? null,
-            role: role,
-          };
-
-          return user;
-        } catch (error) {
-          console.error('Auth error:', error);
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
           return null;
         }
-      },
+
+        const cookieStore = cookies();
+        const supabase = createClient(cookieStore);
+
+        // Authenticate with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password,
+        });
+
+        if (error || !data.user) {
+          return null;
+        }
+
+        // Fetch additional user data from your database if needed
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('id, name, role, avatar_url')
+          .eq('id', data.user.id)
+          .single();
+
+        const role = userProfile?.role as UserRole || 'user';
+        
+        return {
+          id: data.user.id,
+          email: data.user.email,
+          name: userProfile?.name || data.user.email?.split('@')[0] || 'User',
+          role: role,
+          image: userProfile?.avatar_url || null
+        };
+      }
     }),
   ],
-  pages: {
-    signIn: '/auth/login',
-    error: '/auth/error',
-    verifyRequest: '/auth/verify-request',
-  },
   callbacks: {
     async jwt({ token, user }) {
+      // Initial sign in
       if (user) {
-        token.role = user.role;
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name ?? null;
-        token.image = user.image ?? null;
+        return {
+          ...token,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          image: user.image
+        };
       }
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.role = token.role;
-        session.user.id = token.id;
-        session.user.email = token.email;
-        session.user.name = token.name ?? null;
-        session.user.image = token.image;
+      if (token) {
+        session.user = {
+          id: token.id as string,
+          name: token.name,
+          email: token.email,
+          role: token.role as UserRole,
+          image: token.image as string | null,
+        };
       }
       return session;
     },
-  },
-  session: {
-    strategy: 'jwt',
   },
 }; 

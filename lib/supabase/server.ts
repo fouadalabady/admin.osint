@@ -1,26 +1,27 @@
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
-import { Database } from "./types";
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-export const createServerSupabaseClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Missing Supabase environment variables");
-  }
-
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      storageKey: 'sb-auth-token',
-      storage: {
-        getItem: (key: string) => cookies().get(key)?.value ?? null,
-        setItem: () => {}, // No-op since we're on the server
-        removeItem: () => {}, // No-op since we're on the server
+export const createClient = (cookieStore?: ReturnType<typeof cookies>) => {
+  const cookieObj = cookieStore || cookies();
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieObj.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          cookieObj.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieObj.set({ name, value: '', ...options });
+        },
       },
-    },
-  });
-}; 
+    }
+  );
+};
+
+// Alias for backward compatibility
+export const createServerSupabaseClient = createClient; 

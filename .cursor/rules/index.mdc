@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # OSINT Dashboard Documentation
 
@@ -11,10 +11,59 @@ Welcome to the documentation for the OSINT Dashboard project. This comprehensive
 
 | Document                                                    | Description                                                               |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [Project Architecture](mdc:project-architecture.md)             | Overview of system architecture, component diagrams, and data flows       |
-| [Security Model](mdc:security-model.md)                         | Security implementation details, threat models, and mitigation strategies |
-| [Testing Guidelines](mdc:testing-guidelines.md)                 | Testing approaches, examples, and best practices                          |
-| [Supabase Local Development](mdc:supabase-local-development.md) | Guide for setting up and using Supabase locally                           |
+| ](project-architecture.md)             | Overview of system architecture, component diagrams,       |
+| [Security Model](security-model.md)                         | Security implementation details, mitigation strategies |
+| [Testing Guidelines](testing-guidelines.md)                 | Testing est practices                          |
+| [Supabase Development](supabase-develo    | Guide for connecting to and working with hosted Supabase                  |
+| [GraphQL In-integration.md)               | GraphQL implementation details with Apollo Client and GraphQL Yoga        |
+| [API Documentation](API_DOCUMENTATION.md)                   | Complete REST and GraphQL API reference                                   |
+
+## GraphQL API
+
+The project implements a GraphQL API for efficient and type-safe data operations. Key features include:
+
+### Implementation Details
+
+- **GraphQL Yoga** server for request handling
+- **Apollo Client** for front-end data fetching
+- **Type-safe operations** with GraphQL schema
+- **Authentication integration** with NextAuth*Field-level permissions** based on user roles
+
+### Documentation
+
+For complete details on working with the GraphQL API, see:
+
+1. **[GraphQgration.md)**
+   - Implementation architecture
+   - Server and client setup
+   - Security considerations
+   - Usage examples and best practices
+
+2. **[API Documentation: GraphQL](API_DOCUMENTATION.md#graphql-api)**
+   - Schema reference
+   - Query and mutation examples
+   - Authentication requirements
+   - Error handling
+
+## Rich Text Editing
+
+The dashboard implements advanced rich text editing capabilities for content management:
+
+### Editing Solutions
+
+- **Lexical Editor**: Primary editor for complex content like blog posts
+- **TipTap Editor**: Alternative editor for simpler content needs
+- **Content Sanitization**: DOMPurify integration for XSS prevention
+- **Media Embedding**: Support for images, videos, and other media types
+- **Format Conversion**: Import/export to HTML, Markdown, and JSON
+
+### Integration
+
+The rich text editors are fully integrated with:
+- GraphQL mutations for data persistence
+- Content validation workflows
+- Responsive design system
+- Localization framework for multilingual content
 
 ## Password Reset System
 
@@ -34,27 +83,24 @@ The password reset flow has been built with reliability, security, and user expe
   - Row-level security policies
   - IP-based rate limiting
 - **User Experience**
-  - Tabbed interface for reset options
-  - Password strength validation
+  - Tabbed interth validation
   - Clear success/error feedback
   - Responsive design
 
 ### Documentation Map
 
-To understand the password reset system fully, review these documents:
+To understand the password resets:
 
-1. **[Project Architecture: Password Reset Flow](mdc:project-architecture.md)**
+1. **[Project Architecture: Password Reset Flow](project-architecture.md)**
    - Component diagram
    - Database schema
-   - Request and verification phases
-   - Error handling and edge cases
-2. **[Security Model: Password Reset Flow](mdc:security-model.md)**
+  Error handling and edge cases
+2. **[Security Model: Password Reset Flow](security-model.md)**
    - Threat modeling
-   - Authentication controls
-   - API security measures
+   - Authentication consures
    - Database security
    - Audit logging
-3. **[Testing Guidelines: Password Reset Flow](mdc:testing-guidelines.md)**
+3. **[Testing Guidelines: Password Reset Flow](testing-guidelines.md)**
 
    - Unit testing examples
    - Integration testing
@@ -62,29 +108,27 @@ To understand the password reset system fully, review these documents:
    - Security testing
    - Manual testing checklist
 
-4. **[Supabase Local Development](mdc:supabase-local-development.md)**
-   - Database migrations
-   - Table creation
-   - Email testing
+4. **[Supabase Development](supabase-development.md)**
+   - Database configurations
+   - Authentication setup
+   - Email templates
    - Troubleshooting
 
-## Implementation Status
-
-The password reset system is fully implemented and includes:
-
-- Frontend UI components for requesting and confirming password resets
-- Backend API endpoints for verification and processing
-- Database tables for storing verification codes
-- Email templates for notifications
-- Security measures and rate limiting
-- Comprehensive testing
+## Implementaystnd tenfead A(REatad mcurity controls and monitoring
+- Comprehensive testing suite
+- Documentation and developer guides
 
 ## Additional Resources
 
-- [API Documentation](mdc:api-documentation.md)
-- [User Roles & Permissions](mdc:user-roles.md)
-- [Deployment Guide](mdc:deployment.md)
-- [Troubleshooting Common Issues](mdc:troubleshooting.md)
+- [API Documentation](API_DOCUMENTATION.md)
+- [User Roles & Permissions](user-roles.md)
+- [Deployment Guide](deployment-guide.md)
+- [Troubleshooting Common Issues](troubleshooting.md)
+- [Build Process](build-process.md)
+- [Code Quality](code-quality.md)
+- [Vercel Deployment](vercel-deployment.md)
+- [Type Checking](type-checking.md)
+- [Linting Guide](linting-guide.md)
 
 ## Contributing to Documentation
 
@@ -95,3 +139,20 @@ To improve this documentation:
 3. Update the relevant documentation files
 4. Submit a pull request with your changes
 5. Include a clear description of what you've updated or added
+
+## Document Purpose & Reference Usage
+
+This index document serves as the central navigation hub for all documentation related to the OSINT Dashboard project. It's designed to provide:
+
+- A comprehensive overview of the project's documentation structure
+- Quick links to specific documentation sections
+- Focused information about key system components
+- Guidance for both new and existing team members
+
+The document should be used as:
+- The starting point for exploring project documentation
+- A reference to locate specific technical documentation
+- An introduction for new team members to understand the project scope
+- A dashboard for evaluating documentation completeness
+
+Project stakeholders including developers, designers, project managers, and DevOps personnel should begin here to navigate to the most relevant documentation for their specific needs. The index is organized to highlight both core documentation and specialized guides for specific system components like the GraphQL API, rich text editing, and password reset functionality.

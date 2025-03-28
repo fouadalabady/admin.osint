@@ -1,6 +1,6 @@
 # Build Process & Error Handling Guide
 
-This document outlines our approach to build processes and error handling for the OSINT Dashboard project, specifically addressing issues that may cause build failures in the CI/CD pipeline and with Coolify deployments.
+This document outlines our approach to build processes and error handling for the OSINT Dashboard project, specifically addressing issues that may cause build failures in the CI/CD pipeline and with Vercel deployments.
 
 ## 1. Current Build Configuration
 
@@ -104,15 +104,15 @@ typescript: {
 
 This allows the build to succeed despite TypeScript errors, which is necessary for deployment while we work on fixing underlying type issues.
 
-## 3. Coolify Deployment Considerations
+## 3. Vercel Deployment Considerations
 
-For our Coolify deployment pipeline, we've taken several additional steps:
+For our Vercel deployment pipeline, we've taken several additional steps:
 
-1. The build command in `coolify.json` uses our configured build process
-2. The Dockerfile is designed to use our production build process 
-3. We've implemented a health check endpoint for Coolify to verify deployment success
+1. The build command in Vercel project settings uses our configured build process
+2. We've added proper caching for faster builds
+3. We've implemented a health check endpoint for Vercel to verify deployment success
 
-For detailed information about Coolify deployments, see [Coolify Deployment Guide](./coolify-deployment.md).
+For detailed information about Vercel deployments, see [Vercel Deployment Guide](./vercel-deployment.md).
 
 ## 4. Common Build Errors and Solutions
 
@@ -173,3 +173,14 @@ Our long-term strategy is to eliminate the need for error suppression:
 - [TypeScript Configuration Guide](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
 
 This document should be updated as our build process evolves and issues are resolved. 
+
+## 8. Document Purpose & Reference Usage
+
+This document serves as a comprehensive guide for developers and DevOps personnel involved in the OSINT Dashboard project to understand and manage the build process and related error handling. It's a reference for:
+
+- Understanding the different build commands and when to use each one
+- Resolving common build failures in development and CI/CD pipelines
+- Implementing proper error handling patterns for TypeScript and ESLint issues
+- Following the strategic approach to eliminating error suppression over time
+
+Team members should consult this document when setting up build processes, troubleshooting build failures, or implementing new features that might impact the build process. It works in conjunction with the Type Checking Guide and Vercel Deployment Guide to provide a complete picture of the project's build and deployment strategy. 

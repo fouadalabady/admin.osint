@@ -19,13 +19,15 @@ export function useAuth({
 
   // Handle authentication state
   useEffect(() => {
+    console.log('Auth hook - status:', status, 'has session:', !!session);
+
     // If authenticated, store that information in localStorage as fallback
     if (status === 'authenticated' && session) {
       try {
         localStorage.setItem('auth-fallback-authenticated', 'true');
         localStorage.setItem('auth-fallback-timestamp', Date.now().toString());
       } catch (e) {
-        // Ignore localStorage errors
+        console.error('Failed to set localStorage auth fallback', e);
       }
     }
 
@@ -44,12 +46,13 @@ export function useAuth({
           const diffMinutes = (now - timestamp) / (1000 * 60);
 
           if (diffMinutes < 10) {
+            console.log('Using fallback authentication state from localStorage');
             setIsLoading(false);
             return;
           }
         }
       } catch (e) {
-        // Ignore localStorage errors
+        console.error('Failed to check localStorage auth fallback', e);
       }
       return;
     }
@@ -59,6 +62,7 @@ export function useAuth({
 
     // Only attempt redirect once to prevent loops
     if (requireAuth && status === 'unauthenticated' && redirectToLogin && !hasAttemptedRedirect) {
+      console.log('User is not authenticated, redirecting to login');
       setHasAttemptedRedirect(true);
 
       // Clear any stale fallback auth
@@ -66,7 +70,7 @@ export function useAuth({
         localStorage.removeItem('auth-fallback-authenticated');
         localStorage.removeItem('auth-fallback-timestamp');
       } catch (e) {
-        // Ignore localStorage errors
+        console.error('Failed to clear localStorage auth fallback', e);
       }
 
       // Small delay before redirect to ensure all state updates are processed

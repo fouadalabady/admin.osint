@@ -1,217 +1,162 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Icons } from "@/components/icons";
+import Link from "next/link";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff } from "lucide-react";
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  return (
-    <div className="flex h-screen items-center justify-center p-4">
-      <Suspense fallback={<div>Loading...</div>}>
-        <LoginForm />
-      </Suspense>
-    </div>
-  );
-}
-
-function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const timeoutParam = searchParams.get('timeout');
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-  const error = searchParams.get('error');
-
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [formError, setFormError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Show session timeout alert if applicable
-  const [showTimeoutAlert, setShowTimeoutAlert] = useState(false);
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  useEffect(() => {
-    if (timeoutParam === '1') {
-      setShowTimeoutAlert(true);
-      // Auto-hide the alert after 10 seconds
-      const timer = setTimeout(() => setShowTimeoutAlert(false), 10000);
-      return () => clearTimeout(timer);
-    }
-
-    if (error) {
-      setFormError(decodeURIComponent(error));
-    }
-  }, [timeoutParam, error]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    setFormError('');
-    setSuccess('');
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError('');
+  async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
+    setError(null);
 
     try {
-      const result = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
         redirect: false,
       });
 
-      if (!result?.ok) {
-        setFormError(result?.error || 'Authentication failed');
+      if (result?.error) {
+        setError("Invalid email or password. Please try again.");
+        setIsLoading(false);
         return;
       }
 
-      router.push('/dashboard');
+      router.push("/dashboard");
+      router.refresh();
     } catch (error) {
-      setFormError('An unexpected error occurred');
-    } finally {
+      setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="container flex justify-center items-center min-h-screen py-8">
-      {showTimeoutAlert && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Your session has expired due to inactivity. Please log in again to continue.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-
-      <div className="w-full max-w-md mx-auto">
-        <div className="mb-6 flex items-center">
-          <Button variant="ghost" size="sm" className="gap-2" onClick={() => router.push('/')}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-
-        <h1 className="text-2xl font-bold mb-6 text-center">Admin Dashboard</h1>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
-          </CardHeader>
-
-          {(formError || success) && (
-            <div className="px-6">
-              <Alert variant={formError ? 'destructive' : 'default'}>
-                {formError ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                <AlertDescription>{formError || success}</AlertDescription>
-              </Alert>
-            </div>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <div className="flex justify-center mb-4">
+            <Icons.logo className="h-10 w-10" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-
-          <CardContent className="pt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input
-                  id="login-email"
-                  name="email"
-                  type="email"
-                  placeholder="Your email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="login-password">Password</Label>
-                  <Button
-                    variant="link"
-                    className="px-0 font-normal text-sm"
-                    type="button"
-                    onClick={() => router.push('/auth/forgot-password')}
-                  >
-                    Forgot password?
-                  </Button>
-                </div>
-                <Input
-                  id="login-password"
-                  name="password"
-                  type="password"
-                  placeholder="Your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <Button type="submit" className="w-full mt-2" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign In'}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="name@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {showPassword ? "Hide password" : "Show password"}
+                          </span>
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Sign In
               </Button>
             </form>
-          </CardContent>
-
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-center w-full">
-              <p className="text-sm text-muted-foreground">
-                Don&apos;t have an account?{' '}
-                <Button
-                  variant="link"
-                  className="px-0"
-                  type="button"
-                  onClick={() => router.push('/auth/signup')}
-                >
-                  Create one
-                </Button>
-              </p>
-            </div>
-
-            <div className="text-center w-full">
-              <p className="text-xs text-muted-foreground">
-                By signing in, you agree to our{' '}
-                <Link href="/terms" className="underline hover:text-primary">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="underline hover:text-primary">
-                  Privacy Policy
-                </Link>
-              </p>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="text-center text-sm">
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm underline underline-offset-4 hover:text-primary"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 ---
-description: 
+description: This document serves as the authoritative testing reference for the OSINT Dashboard & Agency Website project. It's designed to be used by:  - Developers writing tests for new features - QA engineers designing test strategies - Team leads evaluating test coverage - New team members learning the project's testing approach - DevOps engineers configuring test automation in CI/CD pipelines  The testing guidelines should be consulted when: - Implementing tests for new features or modifications - Setting up testing environments locally or in CI/CD - Determining the appropriate type of test for a specific feature - Troubleshooting failing tests - Establishing test coverage requirements - Onboarding new developers to the project's testing practices  This document complements the Project Architecture and Security Model by providing specific guidance on how to verify that implementations meet both functional requirements and security standards. It serves as both a procedural guide for writing effective tests and a reference for test patterns that work well within the project's specific technology stack and architecture.
 globs: 
 alwaysApply: false
 ---
@@ -433,3 +433,23 @@ Example test header:
 ## Conclusion
 
 Following these testing guidelines will ensure a robust, reliable application with high-quality code. Tests should evolve with the application, and new features should always include corresponding test coverage.
+
+## Document Purpose & Reference Usage
+
+This document serves as the authoritative testing reference for the OSINT Dashboard & Agency Website project. It's designed to be used by:
+
+- Developers writing tests for new features
+- QA engineers designing test strategies
+- Team leads evaluating test coverage
+- New team members learning the project's testing approach
+- DevOps engineers configuring test automation in CI/CD pipelines
+
+The testing guidelines should be consulted when:
+- Implementing tests for new features or modifications
+- Setting up testing environments locally or in CI/CD
+- Determining the appropriate type of test for a specific feature
+- Troubleshooting failing tests
+- Establishing test coverage requirements
+- Onboarding new developers to the project's testing practices
+
+This document complements the Project Architecture and Security Model by providing specific guidance on how to verify that implementations meet both functional requirements and security standards. It serves as both a procedural guide for writing effective tests and a reference for test patterns that work well within the project's specific technology stack and architecture.

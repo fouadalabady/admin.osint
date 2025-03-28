@@ -102,3 +102,21 @@ node scripts/fix-all-user-emails.js
 3. **Regular Audits**: Periodically run the fix scripts to ensure consistency between verification tables and Supabase Auth.
 
 4. **Testing**: When modifying the verification flow, test both the happy path and error conditions.
+
+## Document Purpose & Reference Usage
+
+This document serves as a specialized technical guide focused on the email verification system within the OSINT Dashboard project. It's designed to be referenced by:
+
+- Developers implementing or modifying the email verification flow
+- DevOps engineers troubleshooting authentication issues
+- Support staff addressing user login problems
+- System administrators maintaining the Supabase Auth infrastructure
+
+The document should be consulted when:
+- Investigating user reports of "Email not confirmed" errors
+- Implementing changes to the verification system
+- Debugging inconsistencies between verification tables and authentication status
+- Onboarding new developers to the authentication subsystem
+- Planning maintenance or updates to the email delivery components
+
+This guide complements the Authentication documentation by focusing specifically on the email verification component, which is a critical security feature of the application. It documents both the intended behavior and solutions to known edge cases, helping ensure reliable user account creation and verification.

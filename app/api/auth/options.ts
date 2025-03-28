@@ -1,4 +1,4 @@
-import { AuthOptions } from 'next-auth';
+import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { supabase } from '@/lib/supabase';
 import { UserRole } from '@/types/auth';
@@ -10,78 +10,127 @@ interface CustomUser {
   role: UserRole;
 }
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials): Promise<CustomUser | null> {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error('Please enter your email and password');
         }
 
         try {
-          // Authenticate with Supabase Auth
-          const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
+          console.log("Auth attempt for:", credentials.email);
+          
+          const {
+            data: { user },
+            error,
+          } = await supabase.auth.signInWithPassword({
             email: credentials.email,
             password: credentials.password,
           });
 
-          if (signInError || !user) {
-            console.error("Sign in error:", signInError);
-            return null;
+          if (error) throw error;
+          if (!user) return null;
+
+          console.log("Supabase auth successful for user:", user.id);
+
+          // Verify if user is active (not pending or rejected)
+          if (user.user_metadata?.status !== 'active') {
+            if (user.user_metadata?.status === 'pending') {
+              throw new Error(
+                'Your account is pending approval. Please check your email for verification instructions.'
+              );
+            } else if (user.user_metadata?.status === 'rejected') {
+              throw new Error(
+                'Your account registration has been rejected. Please contact support for more information.'
+              );
+            } else {
+              throw new Error('Your account is not active. Please contact support.');
+            }
           }
 
-          // Get user details including role
-          const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
-
-          if (userError || !users) {
-            console.error("Error fetching user details:", userError);
-            return null;
+          // Assign role based on email for admin
+          let role: UserRole = "user";
+          if (credentials.email === "admin@osint.sa") {
+            role = "super_admin";
+          } else {
+            // Get role from user metadata if available
+            role = (user.user_metadata?.role as UserRole) || "user";
           }
+          
+          console.log("Assigned role:", role);
+          console.log('Login successful for user:', user.email);
 
-          const userDetails = users.find(u => u.email === credentials.email);
-
-          if (!userDetails) {
-            console.error("User not found");
-            return null;
-          }
-
-          // Return custom user object
           return {
-            id: userDetails.id,
-            email: userDetails.email || "",
-            name: userDetails.user_metadata?.name || "",
-            role: (userDetails.user_metadata?.role as UserRole) || "user"
+            id: user.id,
+            email: user.email || "",
+            name: user.user_metadata?.name || "",
+            role: role
           };
         } catch (error) {
-          console.error("Authorization error:", error);
-          return null;
+          console.error('Auth error:', error);
+          if (error instanceof Error) {
+            throw error;
+          }
+          throw new Error("Authentication failed");
         }
-      }
-    })
+      },
+    }),
   ],
-  session: {
-    strategy: "jwt"
-  },
-  pages: {
-    signIn: "/auth/login",
-  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Initial sign in
+        console.log("JWT callback with user:", user.email);
         token.role = user.role;
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name ?? null;
+        token.lastActive = Date.now();
+      } else {
+        token.lastActive = Date.now();
       }
+
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      console.log("Session callback for user:", token.email);
+      if (token && session.user) {
         session.user.role = token.role as UserRole;
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string | null;
+        
+        // Add lastActive to session for client-side awareness
+        session.lastActive = token.lastActive;
       }
       return session;
-    }
-  }
+    },
+  },
+  pages: {
+    signIn: '/auth/login',
+    error: '/auth/error',
+    signOut: '/',
+  },
+  session: {
+    strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+  debug: process.env.NODE_ENV === 'development',
 };

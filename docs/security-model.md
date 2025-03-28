@@ -1,147 +1,163 @@
 # Security Model
 
-This document outlines the security architecture and best practices implemented in the OSINT Dashboard & Agency Website project.
+This document outlines the security architecture and implementation details for the OSINT Dashboard & Agency Website project.
 
-## Authentication & Authorization
+## 1. Overview
 
-### Authentication Flow
+Security is a core consideration in the design and implementation of this application. The security model follows multiple layers of defense and incorporates industry best practices for web application security.
 
-The project uses NextAuth.js integrated with Supabase for secure authentication:
+## 2. Authentication & Authorization
 
-1. **User Registration**:
+### 2.1 Authentication
 
-   - Email/password registration with strong password requirements
-   - Email verification required before account activation
-   - Optional OTP verification for added security
-   - Google reCAPTCHA v3 to prevent bot registrations
+The application implements a secure authentication system using NextAuth.js integrated with Supabase Auth:
 
-2. **Login Process**:
+- **JWT-based authentication** with secure token storage
+- **HTTP-only cookies** for session management
+- **CSRF protection** with double-submit cookie pattern
+- **Session timeout** with configurable expiration
+- **Refresh token rotation** for long-lived sessions
+- **Password complexity requirements** enforced through zxcvbn
+- **Multi-factor authentication (MFA)** for sensitive operations
+- **Password reset with dual delivery** (Supabase Auth + custom SMTP)
+- **Email verification** through one-time passwords (OTP)
 
-   - JWT-based authentication with secure token handling
-   - Token refresh mechanism for extended sessions
-   - Rate limiting to prevent brute force attacks
-   - Login activity logging for audit purposes
+### 2.2 Authorization
 
-3. **Multi-Factor Authentication (MFA)**:
+Access control is implemented through:
 
-   - Optional Time-based One-Time Password (TOTP)
-   - SMS or email-based verification codes
-   - Recovery codes for account access if primary methods are unavailable
+- **Role-based access control (RBAC)** with predefined roles:
+  - Super Admin: Full system access
+  - Editor: Content management access
+  - Contributor: Limited content creation access
+- **Row-level security (RLS)** in Supabase
+- **Policy-based permissions** at the application level
+- **API endpoint protection** with role verification middleware
 
-4. **Password Reset Flow**:
-   - Time-limited reset tokens
-   - One-time use tokens
-   - Email verification required for reset completion
-   - Activity logging for security monitoring
+## 3. Data Security
 
-### Role-Based Access Control (RBAC)
+### 3.1 Database Security
 
-We implement a comprehensive RBAC system with the following roles:
+- **Parameterized queries** to prevent SQL injection
+- **Row-level security policies** in Supabase
+- **Data encryption at rest** for sensitive fields
+- **Database connection pooling** with connection limits
+- **Minimal privilege principle** for database access
 
-1. **Super Admin**:
+### 3.2 API Security
 
-   - Complete system access
-   - User management capabilities
-   - Configuration and settings access
-   - Analytics and reporting access
+- **Input validation** with Zod schemas
+- **Rate limiting** for API endpoints
+- **HTTPS-only connections** for all API traffic
+- **API versioning** for backward compatibility
+- **Error handling** that doesn't leak sensitive information
 
-2. **Editor**:
+### 3.3. GraphQL Security
 
-   - Content creation and editing
-   - Limited user management
-   - No access to system configuration
+- **Authentication middleware** that validates JWT tokens before processing requests
+- **Depth limiting** to prevent nested query attacks
+- **Query complexity analysis** to prevent resource exhaustion
+- **Field-level permissions** based on user roles
+- **Input validation** with GraphQL schema constraints
+- **Batching protection** to prevent abuse of batch operations
+- **Error masking** to prevent information leakage
 
-3. **Contributor**:
+## 4. Content Security
 
-   - Content creation capabilities
-   - No publishing rights
-   - No user management access
+### 4.1 User-Generated Content
 
-4. **Public User**:
-   - Access to public content only
-   - Cannot access admin dashboard
+- **HTML sanitization** using DOMPurify to prevent XSS attacks
+- **Content validation** before storage in database
+- **Media file validation** including type, size, and content verification
+- **SVG sanitization** to prevent script execution in images
 
-## Data Protection
+### 4.2 Rich Text Security
 
-### Data in Transit
+- **Lexical editor security** with content normalization and sanitization
+- **TipTap editor security** with restricted HTML output
+- **Markdown rendering security** with safe rendering options
+- **Image proxy** for external content to prevent CORS issues
+- **Attribute filtering** to remove potentially dangerous HTML attributes
 
-- All API communications use HTTPS/TLS 1.2+
-- Strict Transport Security (HSTS) enabled
-- Certificate pinning for API communications
+### 4.3 Password Security
 
-### Data at Rest
+- **Password strength validation** using zxcvbn library
+- **Visual strength indicator** for user feedback
+- **Common password detection** to prevent weak password choices
+- **Length and complexity requirements** for all passwords
+- **Password change enforcement** for compromised credentials
 
-- Sensitive data encrypted in the database
-- Password hashing using bcrypt with appropriate work factor
-- No sensitive data stored in logs or cache
+## 5. Infrastructure Security
 
-### Token Security
+### 5.1 Network Security
 
-- JWTs stored in HTTP-only cookies
-- CSRF protection implemented
-- Short expiration times with refresh token rotation
-- Session invalidation capabilities
+- **TLS/SSL encryption** for all connections
+- **HTTP security headers**:
+  - Content-Security-Policy
+  - X-XSS-Protection
+  - X-Content-Type-Options
+  - Strict-Transport-Security
+  - Referrer-Policy
+- **CORS configuration** to limit cross-origin requests
 
-## API Security
+### 5.2 Application Security
 
-- Rate limiting on all endpoints
-- Input validation using Zod
-- Parameterized queries for database operations
-- Proper error handling that doesn't expose sensitive information
+- **Google reCAPTCHA v3** for bot protection
+- **Session management** with secure defaults
+- **CSRF protection** across all state-changing operations
+- **Regular dependency updates** to address vulnerabilities
+- **Content Security Policy** to restrict resource loading
 
-## Infrastructure Security
+## 6. Monitoring & Incident Response
 
-### Logging & Monitoring
+### 6.1 Security Monitoring
 
-- Structured logging with sensitive data redaction
-- Comprehensive audit logs for security-related events
-- Real-time alerts for suspicious activities
+- **Audit logging** for security-related events
+- **Login attempt monitoring** with alerting for suspicious activity
+- **API usage monitoring** to detect abnormal patterns
+- **Error tracking** with contextual information
 
-### Security Headers
+### 6.2 Incident Response
 
-The application implements the following security headers:
+- **Defined incident response plan** for different security scenarios
+- **Automatic blocking** of suspicious IP addresses
+- **User notification** for security events related to their account
+- **Administrative alerts** for potential security incidents
 
-- Content-Security-Policy (CSP)
-- X-Content-Type-Options: nosniff
-- X-Frame-Options: DENY
-- X-XSS-Protection: 1; mode=block
-- Referrer-Policy: strict-origin-when-cross-origin
+## 7. Compliance Considerations
 
-## Secure Development Practices
+The application is designed with the following compliance considerations:
 
-- Dependency scanning in CI/CD pipeline
-- Regular security updates
-- Code reviews with security focus
-- Automated testing for security vulnerabilities
+- **GDPR-compliant data handling**
+- **CCPA-compliant privacy controls**
+- **Accessibility compliance** (WCAG 2.1)
+- **Secure coding practices** following OWASP guidelines
 
-## Incident Response
+## 8. Security Testing
 
-In case of a security incident:
+The application undergoes security testing:
 
-1. Immediately contain the breach
-2. Assess the impact and severity
-3. Document the incident details
-4. Implement necessary fixes
-5. Update security measures to prevent recurrence
-6. Notify affected users if necessary
+- **Static application security testing (SAST)**
+- **Dynamic application security testing (DAST)**
+- **Dependency vulnerability scanning**
+- **Regular penetration testing**
 
-## Security Compliance
+## 9. Future Security Enhancements
 
-The application follows security best practices from:
+Planned security enhancements include:
 
-- OWASP Top 10
-- GDPR requirements
-- General web application security standards
+- **Hardware security key support** for MFA
+- **Advanced threat detection** with machine learning
+- **Enhanced API security** with OAuth 2.0 and OpenID Connect
+- **Self-service security tools** for users
+- **Security score tracking** for continuous improvement
 
-## Continuous Improvement
+## Document Purpose & Reference Usage
 
-Our security model undergoes regular reviews and updates based on:
+This document outlines the security architecture and features of the OSINT Dashboard project and should be used as a reference for:
 
-- Emerging threats and vulnerabilities
-- Industry best practices
-- Security testing and audit findings
-- User feedback and incident reports
-
-## Responsible Disclosure
-
-We encourage responsible disclosure of security vulnerabilities. Please report any security concerns to the project maintainers following our responsible disclosure policy.
+- Understanding the security controls in place
+- Maintaining secure coding practices during development
+- Identifying potential areas for security enhancement
+- Training new team members on security considerations
+- Informing security-related decisions in the development process

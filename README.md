@@ -1,131 +1,63 @@
 # OSINT Dashboard
 
-A secure, Next.js-powered dashboard for OSINT operations with admin capabilities, user management, and secure authentication.
+Admin dashboard and agency website with headless CMS capabilities, built with Next.js, React, Supabase, and shadcn/ui.
 
 ## Features
 
-- **Authentication**: Secure login system with role-based access control
-- **Admin Dashboard**: Manage users, content, and settings
-- **Responsive Design**: Mobile-friendly interface using shadcn/ui components
-- **i18n Support**: Multi-language support with next-intl
-- **API Integration**: Connect to external data sources
-- **Security**: Built-in security features including OTP verification
+- **Landing Page & Service Pages**: Fully customizable content management
+- **Blog Module**: Create, edit, and publish blog posts with SEO management
+- **Lead Generation Forms**:
+  - Schedule a Demo
+  - Contact Us
+  - Newsletter Subscription
+  - Join Our Team
+- **Multilingual Support**: Full localization for Arabic and English
+- **Role-Based Access Control**: Admin, Editor, and Contributor roles
+- **Secure Authentication**: Including password reset with fallback mechanisms
+- **GraphQL API**: Type-safe data fetching with Apollo Client and GraphQL Yoga
+- **Rich Text Editing**: Advanced content creation with Lexical and TipTap editors
 
-## Technologies
+## Technology Stack
 
-- **Frontend**: Next.js 15, React 19, Tailwind CSS
-- **Backend**: Supabase for database and authentication
-- **Deployment**: Vercel, Coolify
-- **Security**: NextAuth.js, OTP verification, RBAC
-- **UI Components**: shadcn/ui
+- **Frontend**: Next.js 15 & React 19
+- **UI Components**: shadcn/ui with Radix UI primitives
+- **Authentication**: NextAuth.js with Supabase
+- **Database**: Supabase PostgreSQL
+- **Localization**: next-intl
+- **Form Handling**: React Hook Form with Zod validation
+- **Email**: SMTP service integration
+- **GraphQL**: Apollo Client and GraphQL Yoga
+- **Rich Text Editing**: Lexical and TipTap
+- **Content Security**: DOMPurify for sanitization
+- **Data Visualization**: Recharts for analytics
+- **Deployment**: Vercel with Edge Functions
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18.0.0 or higher
-- npm or yarn
-- Supabase account and project
-
-### Installation
-
 1. Clone the repository
-   ```bash
-   git clone https://github.com/your-username/osintdash.git
-   cd osintdash
-   ```
-
-2. Install dependencies
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-3. Create a `.env.local` file based on the environment variables documentation
-   ```bash
-   # Create a new .env.local file
-   touch .env.local
-   ```
-
-4. Configure the required environment variables in `.env.local` using the guidance in the [Environment Variables Documentation](docs/environment-variables.md)
-
-5. Start the development server
+3. Configure environment variables (see .env.example)
+4. Run development server:
    ```bash
    npm run dev
    ```
 
-## Deployment
+## Supabase Setup
 
-### Deploying to Vercel
-
-This project is optimized for deployment on Vercel. See [Vercel Deployment Guide](docs/vercel-deployment.md) for detailed instructions.
-
-Quick steps:
-
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in the Vercel dashboard
-3. Deploy from the Vercel dashboard or push to your main branch
-
-### Deploying to Coolify
-
-See our [documentation](docs/coolify-deployment.md) for instructions on deploying to Coolify.
-
-## Project Structure
-
-```
-osintdash/
-├── app/               # Next.js App Router
-├── components/        # React components
-├── lib/               # Utility functions and helpers
-├── public/            # Static assets
-├── styles/            # Global styles
-├── types/             # TypeScript type definitions
-└── docs/              # Documentation
-```
-
-## Environment Variables
-
-Key environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key |
-| `NEXTAUTH_URL` | Base URL for NextAuth |
-| `NEXTAUTH_SECRET` | Secret for NextAuth |
-
-For a complete list and setup instructions, see the [Environment Variables Documentation](docs/environment-variables.md).
-
-## Contributing
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [Next.js](https://nextjs.org/)
-- [Supabase](https://supabase.com/)
-- [shadcn/ui](https://ui.shadcn.com/)
-- [NextAuth.js](https://next-auth.js.org/)
-
-## Local Supabase Setup
-
-See the [Supabase Local Development Guide](docs/supabase-local-development.md) for detailed instructions.
+See the [Supabase Development Guide](docs/supabase-development.md) for detailed instructions on connecting to our hosted Supabase instance.
 
 ## Documentation
 
 - [Project Architecture](docs/project-architecture.md) - Overview of system architecture and flows
 - [Security Model](docs/security-model.md) - Details on security implementation
 - [Testing Guidelines](docs/testing-guidelines.md) - Testing strategy and examples
-- [Supabase Local Development](docs/supabase-local-development.md) - Guide for local development
+- [Supabase Development](docs/supabase-development.md) - Guide for working with Supabase
 - [Authentication Flow](docs/authentication-flow.md) - Authentication process documentation
+- [GraphQL Integration](docs/graphql-integration.md) - GraphQL implementation details
+- [API Documentation](docs/API_DOCUMENTATION.md) - REST and GraphQL API reference
 
 ## Password Reset System
 
@@ -139,7 +71,7 @@ This ensures reliability even when one delivery method fails. The system include
 - Secure verification code generation and storage
 - Time-limited tokens (1 hour validity)
 - One-time use verification
-- Password strength validation
+- Password strength validation with zxcvbn
 
 For detailed information about the password reset system, see:
 
@@ -182,6 +114,10 @@ If users encounter "Email not confirmed" errors despite completing verification:
    node scripts/fix-new-user-accounts.js
    ```
    This script analyzes and fixes email confirmation issues for specific accounts.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## Development
 
@@ -230,10 +166,37 @@ npm run build
 yarn build
 ```
 
-For Coolify deployments, we use a specialized build command that ensures clean builds:
+For Vercel deployments:
 
 ```bash
-npm run coolify-build
+npm run vercel-build
 # or
-yarn coolify-build
+yarn vercel-build
 ```
+
+For optimized production builds with quality checks:
+
+```bash
+npm run build:production
+# or
+yarn build:production
+```
+
+## Database Setup
+
+The project uses Supabase as its database. The SQL scripts for setting up the database are organized in the `sql` directory:
+
+1. **00_run_all.sql**: Master script that runs all other scripts in order
+2. **01_init.sql**: Creates base functions and types
+3. **02_auth_tables.sql**: Sets up authentication-related tables
+4. **03_rls_policies.sql**: Configures Row Level Security policies
+
+To set up the database in your hosted Supabase instance:
+
+1. Log in to the [Supabase Dashboard](https://app.supabase.com)
+2. Select your project
+3. Go to the SQL Editor section
+4. Upload and run the SQL scripts in order:
+   ```sql
+   \i sql/00_run_all.sql
+   ```

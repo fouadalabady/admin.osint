@@ -11,7 +11,6 @@ export default function DebugAuthPage() {
   const [tokens, setTokens] = useState<Record<string, string | null>>({});
   const [sessionData, setSessionData] = useState<string>('Loading session data...');
   const [directNavigationResults, setDirectNavigationResults] = useState<string[]>([]);
-  const [envVars, setEnvVars] = useState<Record<string, string>>({});
 
   // Log session info
   useEffect(() => {
@@ -47,20 +46,6 @@ export default function DebugAuthPage() {
     } catch (e) {
       setCookies(`Error reading cookies: ${e}`);
     }
-  }, []);
-
-  useEffect(() => {
-    const fetchEnvVars = async () => {
-      try {
-        const response = await fetch('/api/debug-env');
-        const data = await response.json();
-        setEnvVars(data);
-      } catch (error) {
-        setEnvVars({ error: 'Failed to fetch environment variables' });
-      }
-    };
-
-    fetchEnvVars();
   }, []);
 
   const testDashboardNavigation = () => {
@@ -149,17 +134,6 @@ export default function DebugAuthPage() {
           <CardContent>
             <pre className="bg-muted p-4 rounded-md overflow-auto max-h-[200px] text-xs">
               {JSON.stringify(tokens, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Environment Variables</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded-md overflow-auto max-h-[200px] text-xs">
-              {JSON.stringify(envVars, null, 2)}
             </pre>
           </CardContent>
         </Card>

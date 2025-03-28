@@ -1,236 +1,294 @@
 # Deployment Guide
 
-This document outlines the deployment process for the OSINT Dashboard & Agency Website, with a specific focus on deploying to Coolify.
-
-## Deployment Overview
-
-The project uses a continuous deployment (CD) workflow integrating GitHub with Coolify to automate the build and deployment process. This guide will walk through both automated deployment via CI/CD and manual deployment options.
+This guide outlines the process for deploying the OSINT Dashboard to a production environment using Vercel. It covers the necessary steps, configuration, and best practices.
 
 ## Prerequisites
 
-- A GitHub repository with your project code
-- A Coolify account and server configured
-- GitHub Actions secrets configured for your repository
+Before deploying, ensure you have:
 
-## Setting Up Coolify
+1. A Vercel account with appropriate access permissions
+2. A Supabase project set up and configured
+3. All required environment variables defined
+4. Completed all development and testing requirements
 
-### 1. Initial Coolify Setup
+## Environment Variables
 
-1. Log in to your Coolify dashboard
-2. Create a new project for your application
-3. Select "Deploy from Git repository"
-4. Connect your GitHub repository
+### Required Variables
 
-### 2. Environment Configuration
+The following environment variables must be set in your Vercel deployment settings:
 
-Create the following environment variables in Coolify:
+```
+# Authentication
+NEXTAUTH_URL=https://your-production-domain.com
+NEXTAUTH_SECRET=your-secure-nextauth-secret
 
-| Variable                        | Description                 | Example                            |
-| ------------------------------- | --------------------------- | ---------------------------------- |
-| `NEXTAUTH_URL`                  | Base URL for NextAuth.js    | `https://app.yourdomain.com`       |
-| `NEXTAUTH_SECRET`               | Secret key for NextAuth     | `your-generated-secret`            |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL        | `https://your-project.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key      | `eyJh...`                          |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key   | `eyJh...`                          |
-| `SMTP_HOST`                     | SMTP server host            | `smtp.example.com`                 |
-| `SMTP_PORT`                     | SMTP server port            | `587`                              |
-| `SMTP_USER`                     | SMTP username               | `your-smtp-user`                   |
-| `SMTP_PASSWORD`                 | SMTP password               | `your-smtp-password`               |
-| `EMAIL_FROM`                    | From email address          | `noreply@yourdomain.com`           |
-| `RECAPTCHA_SITE_KEY`            | Google reCAPTCHA site key   | `6Lc...`                           |
-| `RECAPTCHA_SECRET_KEY`          | Google reCAPTCHA secret key | `6Lc...`                           |
-| `NEXT_PUBLIC_DEFAULT_LOCALE`    | Default language            | `en`                               |
-| `NEXT_PUBLIC_AVAILABLE_LOCALES` | Available languages         | `en,ar`                            |
-| `NODE_ENV`                      | Environment name            | `production`                       |
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-### 3. Build Configuration
+# GraphQL
+NEXT_PUBLIC_GRAPHQL_ENDPOINT=https://your-production-domain.com/api/graphql
+GRAPHQL_SERVER_SECRET=your-graphql-server-secret
 
-Configure the build settings in Coolify:
+# Email (SMTP)
+SMTP_HOST=your-smtp-host
+SMTP_PORT=587
+SMTP_USER=your-smtp-username
+SMTP_PASSWORD=your-smtp-password 
+EMAIL_FROM=noreply@your-domain.com
 
-1. **Build Command**: `npm run build`
-2. **Output Directory**: `.next`
-3. **Node Version**: 18.x
-4. **Install Command**: `npm ci`
-5. **Start Command**: `npm start`
+# reCAPTCHA
+RECAPTCHA_SITE_KEY=your-recaptcha-site-key
+RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
+```
 
-### 4. Deployment Webhook
+### Environment-Specific Configuration
 
-Create a deployment webhook in Coolify:
+Vercel provides different environments for each deployment:
 
-1. Navigate to your application settings
-2. Go to "Deployment" tab
-3. Find the "Webhook URL" section
-4. Copy the webhook URL for use in GitHub Actions
+1. **Production**: Main branch deployments
+2. **Preview**: Pull request deployments
+3. **Development**: Local development
 
-## Continuous Deployment with GitHub Actions
+You can use the `VERCEL_ENV` environment variable to determine the current environment and configure your application accordingly.
 
-### 1. GitHub Actions Workflow
+## Deployment Process
 
-The repository contains a pre-configured GitHub Actions workflow file at `.github/workflows/cd.yml`:
+### 1. Connect Your Repository to Vercel
+
+1. Log in to your Vercel account
+2. Click "New Project"
+3. Import your GitHub repository
+4. Configure the project settings:
+   - Build Command: `npm run vercel-build`
+   - Output Directory: `.next`
+   - Environment Variables: Add all required variables
+
+### 2. Configure Build Settings
+
+For optimal builds in Vercel, configure the following:
+
+1. Node.js Version: 18.x or higher
+2. Install Command: `npm ci`
+3. Build Command: `npm run vercel-build`
+
+### 3. Set Up Custom Domain (Optional)
+
+1. In your Vercel project settings, go to "Domains"
+2. Add your custom domain
+3. Follow the DNS configuration instructions
+4. Set up SSL certificates (Vercel handles this automatically)
+
+### 4. Configure Deployment Branch
+
+1. In your Vercel project settings, go to "Git"
+2. Set the Production Branch to your main branch (e.g., `main` or `master`)
+3. Configure branch protection rules in GitHub to ensure code quality
+
+## Deployment Strategies
+
+### Continuous Deployment
+
+Our recommended approach is to use continuous deployment:
+
+1. Set up GitHub Actions for CI testing
+2. Configure automatic deployments to Vercel
+3. Use branch protection rules to enforce code quality
+4. Implement a pull request review process
+
+Example GitHub workflow:
 
 ```yaml
-name: CD
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Determine environment
-        id: env
-        run: |
-          if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            echo "environment=production" >> $GITHUB_OUTPUT
-          else
-            echo "environment=staging" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Deploy to Coolify
-        run: |
-          WEBHOOK_URL=${{ steps.env.outputs.environment == 'production' 
-            && secrets.COOLIFY_PROD_WEBHOOK_URL 
-            || secrets.COOLIFY_STAGING_WEBHOOK_URL }}
-
-          curl -X POST $WEBHOOK_URL
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: vercel/actions/cli@master
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
 ```
 
-### 2. Configure GitHub Secrets
+### Manual Deployments
 
-Add the following secrets to your GitHub repository:
+For more controlled deployments:
 
-1. `COOLIFY_PROD_WEBHOOK_URL`: Your Coolify production environment webhook URL
-2. `COOLIFY_STAGING_WEBHOOK_URL`: Your Coolify staging environment webhook URL
+1. Create production-ready builds locally
+2. Test thoroughly in a staging environment
+3. Deploy to production via the Vercel dashboard
+4. Monitor the deployment for any issues
 
-### 3. Deployment Process
+## Post-Deployment Tasks
 
-The CD workflow will:
+After a successful deployment:
 
-1. Trigger on pushes to `main` branch or any tag starting with `v`
-2. Build the application
-3. Determine the environment (staging for main branch, production for tags)
-4. Deploy to the appropriate Coolify environment using webhooks
+1. Verify all routes and functionality
+2. Check that API endpoints are responding correctly
+3. Monitor application logs for any errors
+4. Perform spot checks on critical features
+5. Verify that authentication is working properly
 
-## Manual Deployment
+## Rollback Procedure
 
-For manual deployments when needed:
+If issues are discovered after deployment:
 
-### 1. Build the Application Locally
+1. Log in to the Vercel dashboard
+2. Navigate to your project's Deployments tab
+3. Find the last successful deployment
+4. Click the three dots menu and select "Promote to Production"
+5. Verify the rollback was successful
 
-```bash
-# Install dependencies
-npm ci
+## Performance Optimization
 
-# Build the application
-npm run build
+Vercel offers several performance features:
+
+1. **Edge Functions**: Deploy critical API routes to the edge network
+2. **ISR (Incremental Static Regeneration)**: Use for pages that change infrequently
+3. **Image Optimization**: Enable Next.js Image component with Vercel's optimization
+4. **Analytics**: Enable Vercel Analytics to monitor Web Vitals
+
+Configuration example in `next.config.mjs`:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: ['your-image-domain.com'],
+    formats: ['image/avif', 'image/webp'],
+  },
+  experimental: {
+    serverActions: true,
+  },
+};
+
+export default nextConfig;
 ```
 
-### 2. Deploy via Coolify Dashboard
+## Monitoring and Logging
 
-1. Log in to your Coolify dashboard
-2. Navigate to your application
-3. Click "Deploy" button to manually trigger a deployment
-4. Monitor the deployment logs for any issues
+### Vercel Analytics
 
-### 3. Deploy via Webhook
+1. Enable Vercel Analytics in your project settings
+2. Monitor Core Web Vitals
+3. Track user behavior and performance metrics
+4. Set up alerts for performance degradation
 
-```bash
-# Use curl to trigger deployment
-curl -X POST https://your-coolify-webhook-url
+### Error Monitoring
+
+1. Consider integrating with Sentry or other error monitoring services
+2. Configure structured logging in your application
+3. Set up alerts for critical errors
+
+## Security Considerations
+
+1. Enable all security headers in `vercel.json`:
+
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}
 ```
 
-## Deployment Best Practices
-
-### Blue-Green Deployment
-
-Coolify supports blue-green deployments to minimize downtime:
-
-1. Configure blue-green deployment in Coolify settings
-2. Each deployment creates a new instance
-3. Traffic is switched only after the new instance is healthy
-
-### Environment-Specific Configurations
-
-Use different Coolify resources for each environment:
-
-1. **Production**: Deployed from version tags (e.g., `v1.0.0`)
-2. **Staging**: Deployed from the `main` branch
-3. **Development**: Local environment only, not deployed
-
-### Database Migrations
-
-Handle database migrations carefully:
-
-1. All migrations should be idempotent (can be run multiple times safely)
-2. Test migrations in staging before deploying to production
-3. Include rollback plans for critical migrations
-
-### Monitoring Deployments
-
-Monitor your deployments through:
-
-1. GitHub Actions logs for build status
-2. Coolify deployment logs
-3. Application logs after deployment
-4. Uptime monitoring tools
-
-### Rollback Procedures
-
-If a deployment fails or causes issues:
-
-1. In Coolify dashboard, find the previous deployment
-2. Click "Rollback" to revert to the previous version
-3. Alternatively, trigger a new deployment with a previous version tag
+2. Ensure all environment variables are properly set
+3. Implement proper authentication checks in API routes
+4. Use HttpOnly cookies for authentication tokens
+5. Configure proper CORS settings
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Build Failures
+1. **Build Failures**:
+   - Check the build logs in Vercel
+   - Verify that all dependencies are properly installed
+   - Ensure environment variables are correctly set
 
-**Problem**: Build fails during GitHub Actions
-**Solution**:
+2. **API Connection Issues**:
+   - Verify Supabase connection settings
+   - Check CORS configuration
+   - Ensure proper authentication headers
 
-- Check the GitHub Actions logs for specific errors
-- Verify all dependencies are properly installed
-- Ensure environment variables are correctly set
+3. **Deployment Timeouts**:
+   - Optimize build times by using proper caching
+   - Consider reducing the size of the application
 
-#### Deployment Timeout
+### Getting Help
 
-**Problem**: Deployment to Coolify times out
-**Solution**:
+If you encounter issues with deployment:
 
-- Check Coolify server resources
-- Review application startup logs
-- Ensure your application starts properly within the timeout period
-
-#### Environment Variable Issues
-
-**Problem**: Application behaves differently after deployment
-**Solution**:
-
-- Compare environment variables between local and Coolify
-- Check for missing or incorrectly formatted variables
-- Verify secrets are properly passed to the application
+1. Check the [Vercel documentation](https://vercel.com/docs)
+2. Review the project's [architecture documentation](./project-architecture.md)
+3. Consult the [Vercel Deployment Guide](./vercel-deployment.md) for specific guidance
 
 ## Conclusion
 
-This deployment guide provides a comprehensive overview of deploying the OSINT Dashboard & Agency Website to Coolify using both automated and manual methods. By following these instructions and best practices, you can ensure a smooth, reliable deployment process with minimal downtime.
+Following this deployment guide will help ensure a smooth transition from development to production. By leveraging Vercel's platform, the OSINT Dashboard can be deployed with minimal configuration while maintaining high performance and security standards.
+
+## Document Purpose & Reference Usage
+
+This document serves as the comprehensive deployment guide for the OSINT Dashboard project. It's designed to be used by:
+
+- DevOps engineers handling the deployment process
+- Developers preparing code for production
+- System administrators managing production environments
+- Team leads overseeing the deployment workflow
+
+The guide should be consulted when:
+- Setting up initial production deployments
+- Configuring continuous integration/deployment pipelines
+- Troubleshooting deployment issues
+- Planning deployment strategies for new features
+- Reviewing security configurations for production
+
+This guide works in conjunction with the Project Architecture document and the Vercel-specific deployment document to provide a complete picture of the deployment process from development to production.

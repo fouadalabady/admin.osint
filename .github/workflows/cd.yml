@@ -1,147 +1,52 @@
-name: CD - Coolify Deployment
+name: CD - Vercel Deployment
 
 on:
   push:
     branches:
       - main
-      - develop
     tags:
       - 'v*'
 
-# Add permissions for creating commit comments
-permissions:
-  contents: read
-  pull-requests: write
-  deployments: write
-
-env:
-  NODE_VERSION: '18'
-  NEXT_TELEMETRY_DISABLED: 1
-
 jobs:
-  verify:
-    name: Verify Code Quality
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Run Linter
-        run: npm run lint
-
-      - name: Type Check
-        run: npm run typecheck
-
-      - name: Check Formatting
-        run: npx prettier --check .
-
   deploy:
-    name: Deploy to Coolify
-    needs: verify
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v3
 
-      - name: Set up Environment Type
-        id: env-type
-        run: |
-          if [[ $GITHUB_REF == refs/tags/v* ]] || [[ $GITHUB_REF == refs/heads/main ]]; then
-            echo "ENV_TYPE=production" >> $GITHUB_OUTPUT
-            echo "Setting deployment to production environment"
-          else
-            echo "ENV_TYPE=staging" >> $GITHUB_OUTPUT
-            echo "Setting deployment to staging environment"
-          fi
-
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          node-version: 18
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js App
+      - name: Build
         run: npm run build
-        env:
-          NEXT_PUBLIC_APP_ENV: ${{ steps.env-type.outputs.ENV_TYPE }}
 
-      - name: Determine Version
-        id: version
+      - name: Determine environment
+        id: env
         run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
           else
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            BRANCH=${GITHUB_REF#refs/heads/}
-            echo "VERSION=${BRANCH}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "environment=staging" >> $GITHUB_OUTPUT
           fi
 
-      - name: Deploy to Coolify (Production)
-        if: steps.env-type.outputs.ENV_TYPE == 'production'
+      - name: Deploy to Vercel (Production)
+        if: steps.env.outputs.environment == 'production'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          echo "Deploying version ${{ steps.version.outputs.VERSION }} to production"
-          curl -X POST ${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }} \
-            -H "Content-Type: application/json" \
-            -d "{\"version\": \"${{ steps.version.outputs.VERSION }}\", \"environment\": \"production\"}"
+          npx vercel --token ${VERCEL_TOKEN} --prod
 
-      - name: Deploy to Coolify (Staging)
-        if: steps.env-type.outputs.ENV_TYPE == 'staging'
+      - name: Deploy to Vercel (Staging)
+        if: steps.env.outputs.environment == 'staging'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          echo "Deploying version ${{ steps.version.outputs.VERSION }} to staging"
-          curl -X POST ${{ secrets.COOLIFY_STAGING_WEBHOOK }} \
-            -H "Content-Type: application/json" \
-            -d "{\"version\": \"${{ steps.version.outputs.VERSION }}\", \"environment\": \"staging\"}"
-
-      - name: Create Deployment Status Comment
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const environment = '${{ steps.env-type.outputs.ENV_TYPE }}';
-            const version = '${{ steps.version.outputs.VERSION }}';
-            const envUrl = environment === 'production' 
-              ? '${{ secrets.PRODUCTION_URL }}' 
-              : '${{ secrets.STAGING_URL }}';
-
-            const { owner, repo } = context.repo;
-            const sha = context.sha;
-
-            await github.rest.repos.createCommitComment({
-              owner,
-              repo,
-              commit_sha: sha,
-              body: `🚀 Deployed to ${environment} (${envUrl}) - Version: ${version}`
-            });
-
-      - name: Notify on Failure
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { owner, repo } = context.repo;
-            const sha = context.sha;
-
-            await github.rest.repos.createCommitComment({
-              owner,
-              repo,
-              commit_sha: sha,
-              body: `❌ Deployment to ${{ steps.env-type.outputs.ENV_TYPE }} failed. Check the [workflow logs](https://github.com/${owner}/${repo}/actions/runs/${context.runId}) for details.`
-            });
+          npx vercel --token ${VERCEL_TOKEN} --environment=staging

@@ -1,179 +1,293 @@
 ---
-description: 
+description: This document serves as the authoritative architectural blueprint for the OSINT Dashboard & Agency Website project. It's designed to be referenced by:  - System architects and tech leads for understanding the overall system design - Developers who need to understand component relationships and data flows - DevOps engineers configuring deployment pipelines and monitoring - New team members gaining a high-level understanding of the project - External consultants and auditors evaluating the system architecture  The architecture document should be consulted when: - Planning new features or subsystems - Troubleshooting complex integration issues - Making significant changes to existing components - Evaluating technology choices for new development - Onboarding new developers to the project - Conducting security or performance reviews  This document provides the "big picture" view of how all components fit together, making it the foundation for more detailed documentation like the Security Model, Testing Guidelines, and deployment-specific guides. It should be maintained as a living document that reflects the current state of the system while indicating planned future directions.
 globs: 
 alwaysApply: false
 ---
 # Project Architecture
 
-This document outlines the architecture of the OSINT Dashboard, including its components, interactions, and deployment strategies.
+This document outlines the architecture of the OSINT Dashboard & Agency Website project, detailing key components, their interactions, and the technologies used.
 
 ## System Overview
 
-The OSINT Dashboard is built with a modern tech stack:
+The project is a headless admin dashboard and agency website built with modern web technologies. It consists of:
 
-- **Frontend**: Next.js 15.x, React 19.x with App Router
-- **UI Components**: shadcn/ui library for consistent design
-- **Authentication**: NextAuth.js integrated with Supabase Auth
-- **Database**: Supabase PostgreSQL for data storage
-- **API**: Next.js API routes and Supabase functions
-- **Deployment**: Dual deployment options (Vercel and Coolify)
+1. **Public-facing Agency Website** - Marketing site with service pages, blog, and lead generation forms
+2. **Admin Dashboard** - Secure internal tool for content management and administration
+3. **API Layer** - RESTful and GraphQL endpoints for data operations
+4. **Authentication System** - Secure user management with role-based access
+5. **Database Layer** - Supabase PostgreSQL for data persistence
 
-## Architecture Diagram
+## Tech Stack
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  Client (Browser/Mobile)                     │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                       Next.js Frontend                       │
-│                                                             │
-│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │     Pages     │    │  Components  │    │    Hooks     │  │
-│  └───────────────┘    └──────────────┘    └──────────────┘  │
-│                                                             │
-│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │  API Routes   │    │  Auth System │    │ Form Control │  │
-│  └───────────────┘    └──────────────┘    └──────────────┘  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                        Supabase Backend                      │
-│                                                             │
-│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   Auth API    │    │  PostgreSQL  │    │  Storage     │  │
-│  └───────────────┘    └──────────────┘    └──────────────┘  │
-│                                                             │
-│  ┌───────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │  Row Level    │    │   Functions  │    │   Webhooks   │  │
-│  │   Security    │    │              │    │              │  │
-│  └───────────────┘    └──────────────┘    └──────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
+| Category               | Technology                                | Purpose                                    |
+| ---------------------- | ----------------------------------------- | ------------------------------------------ |
+| **Frontend Framework** | Next.js 14+                               | Server-side rendering, routing, API routes |
+| **UI Components**      | shadcn/ui, Radix UI                       | Accessible, customizable components        |
+| **State Management**   | React Context, Apollo Client              | Global state and data fetching             |
+| **Database**           | Supabase (PostgreSQL)                     | Data storage, real-time subscriptions      |
+| **Authentication**     | NextAuth.js, Supabase Auth                | User management, session handling          |
+| **GraphQL**            | Apollo Client, GraphQL Yoga               | Type-safe API with efficient data fetching |
+| **Content Editing**    | Lexical, TipTap                           | Rich text editing and content management   |
+| **Styling**            | Tailwind CSS                              | Utility-first styling                      |
+| **Localization**       | next-intl, i18n routing                   | Multi-language support                     |
+| **Forms**              | React Hook Form, Zod                      | Form handling and validation               |
+| **Security**           | reCAPTCHA v3, HTTPS, CSRF, DOMPurify      | Anti-bot, secure communications, sanitization |
+| **Deployment**         | Coolify                                   | Continuous deployment                      |
 
-## Key Components
-
-### Frontend
-
-1. **App Router**: Next.js App Router for routing and page structure
-2. **Components**: Reusable UI components built with shadcn/ui
-3. **Auth Context**: Global authentication state management
-4. **Form System**: React Hook Form with Zod validation
-5. **API Clients**: Fetch wrappers for API interactions
-
-### Backend
-
-1. **API Routes**: Next.js API routes for server-side logic
-2. **Authentication**: NextAuth.js with Supabase provider
-3. **Database Access**: Supabase client for data operations
-4. **Email Service**: SMTP integration for notifications
-5. **Storage**: File uploads and management through Supabase
-
-## Deployment Architecture
-
-The application supports two deployment models:
-
-### Vercel Deployment (Serverless)
+## Application Structure
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  GitHub Repo    │───▶│  Vercel CI/CD   │───▶│ Vercel Platform │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                      │
-                                                      ▼
-┌─────────────────┐                        ┌─────────────────────┐
-│ Vercel Edge     │◀───────────────────────│ Serverless Functions│
-│ (Global CDN)    │                        │  (API Routes)       │
-└─────────────────┘                        └─────────────────────┘
-        │                                          │
-        │                                          │
-        ▼                                          ▼
-┌─────────────────┐                        ┌─────────────────────┐
-│    Browsers     │                        │   Supabase Cloud    │
-└─────────────────┘                        └─────────────────────┘
+/
+├── app/                    # Next.js App Router
+│   ├── [locale]/           # i18n routes
+│   │   ├── admin/          # Admin dashboard routes
+│   │   ├── auth/           # Authentication routes
+│   │   ├── blog/           # Blog routes
+│   │   └── (site)/         # Public site routes
+│   ├── api/                # API routes
+│   │   ├── auth/           # Auth-related endpoints
+│   │   ├── blog/           # Blog content endpoints
+│   │   └── webhooks/       # External service webhooks
+├── components/             # Shared React components
+│   ├── admin/              # Admin-specific components
+│   ├── auth/               # Authentication components
+│   ├── blog/               # Blog-specific components
+│   ├── forms/              # Form components
+│   ├── layout/             # Layout components
+│   ├── providers/          # Context providers (Apollo, etc.)
+│   └── ui/                 # UI components (shadcn)
+├── config/                 # Configuration files
+├── db/                     # Database migrations and schemas
+├── graphql/                # GraphQL server implementation
+│   ├── resolvers/          # GraphQL resolvers
+│   ├── schema/             # GraphQL schema definitions
+│   ├── directives/         # Custom GraphQL directives
+│   └── index.ts            # GraphQL server entry point
+├── hooks/                  # Custom React hooks
+├── lib/                    # Utility functions and shared logic
+│   ├── auth/               # Authentication utilities
+│   ├── api/                # API utilities
+│   ├── graphql/            # GraphQL client code
+│   │   ├── client.ts       # Apollo Client setup
+│   │   ├── operations/     # GraphQL queries and mutations
+│   │   └── hooks/          # Custom GraphQL hooks
+│   ├── supabase/           # Supabase client and helpers
+│   └── validation/         # Zod schemas
+├── locales/                # Translation files
+├── public/                 # Static assets
+└── styles/                 # Global styles
 ```
 
-### Coolify Deployment (Container-based)
+## Key Components and Interactions
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  GitHub Repo    │───▶│  Coolify CI/CD  │───▶│ Docker Container│
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                      │
-                                                      ▼
-┌─────────────────┐                        ┌─────────────────────┐
-│  Nginx/Caddy    │◀───────────────────────│  Next.js Server    │
-│  (Reverse Proxy)│                        │ (Container Process) │
-└─────────────────┘                        └─────────────────────┘
-        │                                          │
-        │                                          │
-        ▼                                          ▼
-┌─────────────────┐                        ┌─────────────────────┐
-│    Browsers     │                        │   Supabase Cloud    │
-└─────────────────┘                        └─────────────────────┘
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    User->>Frontend: Login Request
+    Frontend->>API: Authenticate (credentials)
+    API->>NextAuth: Verify credentials
+    NextAuth->>Supabase: Query user data
+    Supabase-->>NextAuth: User data
+    NextAuth-->>API: Session token
+    API-->>Frontend: Session & CSRF token
+    Frontend->>User: Redirect to dashboard
 ```
 
-## Data Flow
+### Content Management Flow
 
-1. **Authentication Flow**:
-   - User submits credentials → NextAuth.js verifies with Supabase → JWT token issued
-   - Session maintained via secure HTTP-only cookies
-   - Role-based access control enforced on both client and server
+```mermaid
+sequenceDiagram
+    Admin->>Dashboard: Create/Edit content
+    Dashboard->>GraphQL API: Submit content
+    GraphQL API->>Middleware: Validate request
+    Middleware->>RoleGuard: Check permissions
+    RoleGuard-->>GraphQL API: Authorization result
+    GraphQL API->>Database: Store content
+    Database-->>GraphQL API: Success/Failure
+    GraphQL API-->>Dashboard: Response
+    Dashboard-->>Admin: Feedback
+```
 
-2. **Data Operations Flow**:
-   - Client requests data → API route receives request → Server validates authentication
-   - Server performs database operations → Response sent to client
-   - Real-time subscriptions for live updates (where applicable)
+### Rich Text Editing Flow
 
-3. **Form Submission Flow**:
-   - Client validates with Zod → Form submitted to API route
-   - Server performs secondary validation → Database operation
-   - Response status returned to client → UI updated accordingly
+```mermaid
+sequenceDiagram
+    Editor->>LexicalEditor: User Input
+    LexicalEditor->>EditorState: Update State
+    LexicalEditor->>Sanitizer: Sanitize Content
+    Sanitizer-->>LexicalEditor: Clean HTML
+    LexicalEditor->>GraphQL: Save Content
+    GraphQL->>Database: Store in Supabase
+    Database-->>GraphQL: Confirmation
+    GraphQL-->>LexicalEditor: Success/Error
+    LexicalEditor-->>Editor: Feedback
+```
 
-## Multilingual Support
+### Public Site Data Flow
 
-The application supports multiple languages through next-intl:
+```mermaid
+sequenceDiagram
+    User->>Frontend: Visit page
+    Frontend->>GraphQL: Request data
+    GraphQL->>Database: Query content
+    Database-->>GraphQL: Content data
+    GraphQL-->>Frontend: Structured response
+    Frontend->>User: Render page
+```
 
-1. **Language Detection**: Automatic based on browser settings or user selection
-2. **Route Structure**: i18n routing with language prefix
-3. **Translation Files**: Structured JSON files for each supported language
-4. **RTL Support**: Full right-to-left text support for Arabic
+## Database Schema
+
+The database uses a normalized schema with the following core tables:
+
+- **users**: User accounts and authentication data
+- **profiles**: Extended user profile information
+- **roles**: User role definitions for RBAC
+- **user_roles**: Junction table relating users to roles
+- **blog_posts**: Blog content with metadata
+- **blog_categories**: Categories for blog posts
+- **blog_tags**: Tags for blog posts
+- **forms_submissions**: Lead generation form submissions
+- **password_reset_verifications**: Password reset tokens and verification
+- **otp_verifications**: One-time password verification records
+- **security_logs**: Audit logging for security events
+
+## GraphQL Architecture
+
+The GraphQL implementation follows a layered architecture:
+
+1. **Schema Layer**: Type definitions and operation specifications
+2. **Resolver Layer**: Business logic that connects schema to data sources
+3. **Data Access Layer**: Database interactions via Supabase clients
+4. **Authentication Layer**: JWT validation and user identification
+5. **Authorization Layer**: Permission checks based on user roles
+
+Key features of the GraphQL implementation:
+
+- **Type-Safe Operations**: Strongly typed queries and mutations
+- **Optimized Data Fetching**: Only retrieve what's needed, reducing over-fetching
+- **Field-Level Security**: Control access at the field level based on permissions
+- **Error Handling**: Standardized error reporting with contextual information
+- **Caching Strategy**: Apollo InMemoryCache with type policies for optimal performance
+
+## Rich Text Editing Architecture
+
+Our content management system implements two rich text editors:
+
+1. **Lexical Editor**:
+   - Used for complex content like blog posts
+   - Framework-agnostic core with React bindings
+   - Plugin-based architecture for extensibility
+   - Structured content model with serialization to HTML/JSON
+   - Support for markdown, code blocks, and tables
+
+2. **TipTap Editor**:
+   - Used for simpler content needs
+   - Based on ProseMirror with React integration
+   - Extension system for custom functionality
+   - Focus on user experience and accessibility
+   - Support for collaborative editing (future enhancement)
+
+Both editors integrate with:
+- Content sanitization via DOMPurify
+- GraphQL mutations for persistence
+- Consistent styling with design system
+- Media management for images and attachments
 
 ## Security Architecture
 
-1. **Authentication**: JWT-based with secure token rotation
-2. **Authorization**: Row-level security in Supabase + middleware checks
-3. **Input Validation**: Client and server validation with Zod
-4. **XSS Protection**: React's built-in protection + strict CSP
-5. **CSRF Protection**: Token-based protection for forms
-6. **API Security**: Rate limiting and request validation
+Security is implemented across multiple layers:
 
-## Deployment Strategies
+1. **Network Layer**: HTTPS, secure headers
+2. **Application Layer**: Input validation, CSRF protection
+3. **Authentication Layer**: JWT, session management, MFA
+4. **Authorization Layer**: RBAC, row-level security
+5. **Database Layer**: Parameterized queries, encryption at rest
+6. **Content Layer**: DOMPurify sanitization for user-generated content
 
-The application supports deployment to both Vercel and Coolify:
+For detailed security information, see the [Security Model](mdc:security-model.md) document.
 
-1. **Vercel Deployment**: 
-   - Leverages serverless architecture
-   - Automatic preview deployments
-   - Global CDN for edge delivery
-   - Simplified environment variable management
-   - Detailed in [Vercel Deployment Guide](mdc:vercel-deployment.md)
+## i18n Architecture
 
-2. **Coolify Deployment**:
-   - Container-based deployment
-   - Self-hosted option available
-   - Consistent performance (no cold starts)
-   - Fine-grained resource control
-   - Detailed in [Coolify Deployment Guide](mdc:coolify-deployment.md)
+The application supports multiple languages through:
 
-See [Deployment Comparison](mdc:deployment-comparison.md) for a detailed comparison between the two options.
+- Locale-based routing
+- Runtime message translation with `next-intl`
+- RTL layout support for Arabic
+- Translation files stored in JSON format in `/locales`
+- Server and client components translation support
 
-## Development Workflow
+## Deployment Architecture
 
-1. **Local Development**: Next.js dev server with local Supabase instance
-2. **Testing**: Unit tests for components and integration tests for workflows
-3. **CI/CD**: Automated testing and deployment via GitHub Actions
-4. **Environments**: Development, Staging, and Production environments
-5. **Monitoring**: Error tracking and performance monitoring
+The application is deployed using a CI/CD pipeline:
+
+1. GitHub Actions for CI (tests, linting)
+2. Automated deployment to Coolify
+3. Environment-specific configurations
+4. Database migrations applied automatically
+5. Zero-downtime deployments
+
+## Performance Considerations
+
+The architecture prioritizes performance through:
+
+- Server components for reduced client JavaScript
+- Static generation where possible
+- Edge functions for dynamic but fast APIs
+- GraphQL for efficient data fetching
+- Optimized bundle sizes with code-splitting
+- Image optimization with Next.js Image component
+- Efficient database queries with proper indexing
+
+## Extensibility
+
+The system is designed for extensibility:
+
+- Modular component architecture
+- Pluggable authentication providers
+- Extensible API using middleware pattern
+- GraphQL schema designed for evolution
+- Clear separation of concerns
+- Standardized state management patterns
+
+## Monitoring and Observability
+
+The application includes:
+
+- Structured logging for all operations
+- Error tracking integration
+- Performance monitoring
+- User activity analytics
+- Security audit logging
+- GraphQL-specific metrics and insights
+
+## Future Architecture Considerations
+
+Planned architectural enhancements:
+
+- GraphQL subscriptions for real-time updates
+- Microservices for specific high-load components
+- Enhanced real-time capabilities
+- AI-powered content recommendations
+- Edge computing for global performance
+- GraphQL federation for distributed services
+
+## Document Purpose & Reference Usage
+
+This document serves as the authoritative architectural blueprint for the OSINT Dashboard & Agency Website project. It's designed to be referenced by:
+
+- System architects and tech leads for understanding the overall system design
+- Developers who need to understand component relationships and data flows
+- DevOps engineers configuring deployment pipelines and monitoring
+- New team members gaining a high-level understanding of the project
+- External consultants and auditors evaluating the system architecture
+
+The architecture document should be consulted when:
+- Planning new features or subsystems
+- Troubleshooting complex integration issues
+- Making significant changes to existing components
+- Evaluating technology choices for new development
+- Onboarding new developers to the project
+- Conducting security or performance reviews
+
+This document provides the "big picture" view of how all components fit together, making it the foundation for more detailed documentation like the Security Model, Testing Guidelines, and deployment-specific guides. It should be maintained as a living document that reflects the current state of the system while indicating planned future directions.

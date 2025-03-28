@@ -1,15 +1,14 @@
-import { type UserRole } from '@/types/auth';
+import { DefaultSession } from 'next-auth';
+
+export type UserRole = 'admin' | 'editor' | 'user';
 
 // Extend the default session type
 declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
-      email: string;
-      name?: string | null;
-      image?: string | null;
       role: UserRole;
-    }
+    } & DefaultSession['user'];
   }
 
   interface User {

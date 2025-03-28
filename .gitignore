@@ -24,14 +24,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
 # local env files
 .env*.local
 .env
-.env.development
-.env.test
-.env.production
 
 # vercel
 .vercel
@@ -40,43 +36,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# supabase
-.supabase/
-
-# IDE/Editor directories
+# IDE
 .idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-
-# Logs
-logs
-*.log
-
-# Build cache
-.turbo
-
-# Temporary files
-.temp
-.tmp
-tmp/
-
-# Deploy artifacts
-dist/
-
-# Local Netlify folder
-.netlify
-
-# Local Vercel folder
-.vercel
-
-# Sentry
-.sentryclirc
-
-# Local configuration
-config.local.js
+.vscode/
+*.swp
+*.swo
 
 # OS generated files
 .DS_Store

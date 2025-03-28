@@ -47,7 +47,6 @@ Additional features include:
 - **Best Practices:**
   - Use containerization or virtual environments to mirror production settings as closely as possible.
   - Ensure consistency by aligning your local environment with staging and production configurations.
-  - **Run full linting and type checking locally** (e.g., via `npm run lint:fix` and `npm run typecheck`) to catch and fix all errors before committing.
 
 ### 2.2 Version Control with GitHub
 - **Repository Management:**
@@ -55,18 +54,17 @@ Additional features include:
   - Use branching strategies (e.g., feature branches, Git Flow) to manage new features, bug fixes, and experiments.
 - **Best Practices:**
   - Commit frequently with clear, descriptive messages.
-  - Utilize pull requests for thorough code reviews.
-  - **Enforce pre-commit hooks, linters, and automated tests** to ensure code quality. No code should be merged if linting or type-checking errors remain.
+  - Utilize pull requests for code reviews and merge processes.
+  - Enforce pre-commit hooks, linters, and automated tests to maintain code quality.
 
 ### 2.3 Production with Coolify
 - **Deployment Environment:**
   - Use Coolify as your production platform to deploy the latest stable releases.
   - Integrate Continuous Deployment (CD) pipelines with GitHub for automated builds and deployments.
 - **Best Practices:**
-  - Maintain strict separation of production, staging, and local environments.
+  - Separate production, staging, and local environments.
   - Securely manage environment variables and rotate credentials regularly.
   - Consider blue-green or canary deployment strategies to mitigate risks during rollouts.
-  - **Ensure that production builds are completely clean:** No debug logs, development commands, or error suppressions are permitted. All reported errors must be fixed before deployment.
 
 ---
 
@@ -75,15 +73,14 @@ Additional features include:
 ### 3.1 Automated Pipelines
 - **Build & Test:**
   - Set up CI pipelines (e.g., GitHub Actions) to automatically run unit, integration, and end-to-end tests on every commit.
-  - Prioritize testing for critical modules such as authentication, form handling, and email workflows.
-  - **Enforce Code Quality:** The CI pipeline must run linting (`npm run lint`) and type checking (`npm run typecheck`), and the build must fail if any errors or warnings are present. Use the production build command (`npm run build:production`) to enforce these checks.
+  - Prioritize coverage of critical modules such as authentication, form handling, and email workflows.
 - **Deployment Automation:**
-  - Configure CD pipelines to push changes to Coolify only after successful tests, code reviews, and error-free builds.
-  - Use approval gates for production deployments when necessary.
+  - Configure CD pipelines to push changes to Coolify after successful tests and code reviews.
+  - Use approval gates for production deployments where necessary.
 
 ### 3.2 Rollback & Recovery
 - Plan for automated rollback strategies in case of deployment failures.
-- Implement comprehensive logging and monitoring (handled outside this document) to quickly diagnose and resolve issues.
+- Implement comprehensive logging and monitoring (handled outside this document) to quickly diagnose and respond to issues.
 
 ---
 
@@ -93,14 +90,15 @@ Additional features include:
 - **Authentication & Authorization:**
   - Use NextAuth.js with Supabase for secure authentication.
   - Implement role-based access control (RBAC) for managing different user types (Super Admin, Editor, Contributor).
-  - Enforce Multi-Factor Authentication (MFonoperations.
+  - Enforce Multi-Factor Authentication (MFA) and OTP verification for high-risk operations.
 - **Data Protection:**
   - Encrypt data in transit (TLS/SSL) and at rest.
   - Store tokens in HTTP-only cookies with secure token refresh mechanisms.
 
 ### 4.2 Infrastructure Security
 - **Logging & Auditing:**
-  - Utilize structured logging (e.g., with Pino) to capture detailed system and user eventntain immutable audit logs for sensitive actions.
+  - Utilize structured logging (e.g., with Pino) to capture detailed system and user events.
+  - Maintain immutable audit logs for sensitive actions.
 - **Real-Time Monitoring:**
   - Integrate SIEM platforms to monitor logs and trigger alerts for anomalous activities.
 
@@ -110,17 +108,16 @@ Additional features include:
 
 ### 5.1 Documentation & Developer Onboarding
 - **Project Documentation:**
-  - Keep the project roadmap, README, and additional docs (e.g., @Project Architecture, @Security Model) updated.
+  - Keep the project roadmap, README, and additional docs (e.g., [Project Architecture](mdc:docs/project-architecture.md), [Security Model](mdc:docs/security-model.md)) updated.
 - **Onboarding:**
   - Ensure new team members understand the project structure, local setup, and CI/CD workflows.
   - Provide clear guidelines for local Supabase setup and environment configurations.
 
 ### 5.2 UI Component & Code Standards
 - **UI Components:**
-  - Use only the components provided by @shadcn/ui to ensure design consistency.
+  - Use only the components provided by [shadcn/ui](mdc:https:/ui.shadcn.com) to ensure design consistency.
 - **Coding Practices:**
   - Follow auto-formatting guidelines (Prettier, ESLint) and use strong typing (TypeScript recommended) to minimize runtime errors.
-  - **Code Quality is Paramount:** Fix every lint and type-check error—simply passing the build is not acceptable. Every error must be addressed to maintain a clean, well-structured codebase.
 
 ---
 
@@ -169,30 +166,35 @@ This section outlines specific guidelines for maintaining a clean production env
 - Use secure secrets management systems for production (e.g., GitHub Secrets, Coolify environment settings).
 - Regularly rotate keys and credentials.
 
---lem**L Enwitonsducinting and type checks before committing.
+---
+
+## 8. Summary & Implementation Roadmap
+
+- **Local Development:**
+  Ensure a robust local setup with consistent configurations that mirror staging/production.
 
 - **Version Control & CI/CD:**  
-  Use GitHub for versioning, automated testing, and continuous deployment to Coolify. The CI pipeline must enforce error-free builds by failing if any lint or type-check errors are present.
+  Use GitHub for versioning, automated testing, and continuous deployment to Coolify.
 
 - **Security:**  
   Enforce strict authentication, RBAC, and data protection measures along with comprehensive logging and monitoring.
 
 - **Production Hygiene:**  
-  Enforce cleaning of production builds by removing any development-specific instructions, debug code, and test endpoints. No temporary error suppressions should remain in the production code.
+  Enforce cleaning of production builds by removing any development-specific instructions, debug code, and test endpoints.
 
 - **Operational Excellence:**  
   Maintain updated documentation, regular security audits, and a well-defined incident response plan.
 
-By integrating these DevOps practices, the project benefits from a streamlined development process, secure and reliable deployments, and a clean, maintainable codebase that prioritizes code quality over merely passing the build.
+By integrating these DevOps practices, the project benefits from a streamlined development process, secure and reliable deployments, and effective operational management.
 
 ---
 
 ## 9. References
 
-- @Next.js Documentation
-- @React Documentation
-- @Supabase Documentation
-- @NextAuth.js Documentation
-- @shadcn/ui Documentation
-- @next-intl Documentation
-- @i18n Routing Documentation
+- [Next.js Documentation](mdc:https:/nextjs.org/docs)
+- [React Documentation](mdc:https:/reactjs.org/docs/getting-started.html)
+- [Supabase Documentation](mdc:https:/supabase.com/docs)
+- [NextAuth.js Documentation](mdc:https:/next-auth.js.org/getting-started/introduction)
+- [shadcn/ui Documentation](mdc:https:/ui.shadcn.com)
+- [next-intl Documentation](mdc:https:/github.com/amannn/next-intl)
+- [i18n Routing Documentation](mdc:https:/nextjs.org/docs/advanced-features/i18n-routing)

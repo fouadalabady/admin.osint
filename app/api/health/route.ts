@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Health check endpoint for monitoring application status
- * Used by Coolify and other monitoring services to verify application health
+ * API route for health checking
+ * Used by Vercel and other monitoring services to verify application health
  */
 export async function GET() {
   return NextResponse.json({

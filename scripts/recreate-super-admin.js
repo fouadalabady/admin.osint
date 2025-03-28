@@ -31,29 +31,24 @@ async function recreateSuperAdmin() {
 
     // Find the user with the given email
     const user = userList.users.find(u => u.email === email);
-    // @ts-expect-error 
 
     if (user) {
-      // @ts-expect-error
       console.log(`User found: ${user.id}. Deleting...`);
 
       // Delete the existing user
       const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
 
       if (deleteError) {
-        // @ts-expect-error
         console.error('Error deleting user:', deleteError);
         process.exit(1);
       }
-      // @ts-expect-error
+
       console.log('User deleted successfully.');
     } else {
-      // @ts-expect-error
       console.log(`No existing user found with email ${email}. Will create new.`);
     }
 
     // Create new user
-    // @ts-expect-error
     console.log('Creating new super admin user...');
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email,
@@ -66,11 +61,10 @@ async function recreateSuperAdmin() {
     });
 
     if (createError) {
-      // @ts-expect-error
       console.error('Error creating user:', createError);
       process.exit(1);
     }
-    // @ts-expect-error
+
     console.log('New super admin user created with ID:', newUser.user.id);
 
     // Execute a direct SQL command to ensure email_confirmed_at is set
@@ -83,15 +77,11 @@ async function recreateSuperAdmin() {
     });
 
     if (sqlError) {
-          // @ts-expect-error
       console.warn('Warning: Could not execute SQL to directly set email_confirmed_at:', sqlError);
-      // @ts-expect-error
       console.log(
         'The user has still been created, but you may encounter email confirmation issues.'
       );
-
     } else {
-      // @ts-expect-error
       console.log('Email confirmation time set via SQL.');
     }
 
@@ -101,11 +91,10 @@ async function recreateSuperAdmin() {
     );
 
     if (verifyError) {
-      // @ts-expect-error
       console.error('Error verifying user:', verifyError);
       process.exit(1);
     }
-    // @ts-expect-error
+
     console.log('Super admin user details:', {
       id: verifyData.user.id,
       email: verifyData.user.email,
@@ -113,12 +102,11 @@ async function recreateSuperAdmin() {
       role: verifyData.user.user_metadata?.role || 'none',
       status: verifyData.user.user_metadata?.status || 'none',
     });
-    // @ts-expect-error
+
     console.log(
       'IMPORTANT: The password has been set to "StrongPassword123!". Please change it after login.'
     );
   } catch (error) {
-    // @ts-expect-error
     console.error('Unexpected error:', error);
     process.exit(1);
   }

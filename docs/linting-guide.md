@@ -1,6 +1,6 @@
-# Linting Issues Guide
+# Linting Guide for the OSINT Dashboard
 
-This guide provides step-by-step instructions for addressing the common linting issues in our OSINT Dashboard codebase, ensuring builds pass smoothly with Coolify.
+This guide explains how to address common linting issues in the codebase, ensuring builds pass smoothly with Vercel.
 
 ## Common Linting Errors
 
@@ -192,4 +192,22 @@ If the build fails, review the output for any remaining issues and address them 
 3. **Regular Maintenance**: Periodically run the linting fix tool to catch new issues.
 4. **Code Reviews**: Pay attention to linting issues during code reviews.
 
-By following this guide and addressing all linting issues, we'll maintain a clean, error-free codebase that builds successfully in our Coolify deployment environment. 
+By following this guide and addressing all linting issues, we'll maintain a clean, error-free codebase that builds successfully in our Vercel deployment environment. 
+
+## Document Purpose & Reference Usage
+
+This document serves as a practical, hands-on guide for addressing common linting issues in the OSINT Dashboard codebase. It's designed to be referenced by:
+
+- Developers actively working on code cleanup and quality improvement
+- Team members troubleshooting build failures related to linting
+- New developers being onboarded to the project's code quality standards
+- Code reviewers checking for compliance with project linting rules
+
+The guide should be consulted when:
+- Working on fixing a specific type of linting error
+- Setting up linting in a development environment
+- Preparing code for deployment that's failing linting checks
+- Training team members on code quality best practices
+- Implementing automation for code quality checks
+
+This document complements the Code Quality Guidelines by providing specific, actionable examples of how to fix common issues. While the Code Quality document provides the "why" and general principles, this Linting Guide provides the "how" with concrete examples and step-by-step instructions for resolving specific linting errors. 

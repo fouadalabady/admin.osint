@@ -2,9 +2,9 @@
 
 This document outlines our approach to code quality, standards for the codebase, and instructions for managing and fixing common issues.
 
-## Overview
+## Introduction
 
-We maintain high code quality standards to ensure our builds are error-free, especially when deploying with Coolify. Our approach includes:
+We maintain high code quality standards to ensure our builds are error-free, especially when deploying with Vercel. Our approach includes:
 
 1. **Static Analysis** via ESLint and TypeScript
 2. **Formatting Standards** via Prettier
@@ -155,3 +155,14 @@ Then configure lint-staged in package.json:
 ## Conclusion
 
 Maintaining high code quality is a team effort. By following these guidelines and using the provided tools, we can ensure our codebase remains clean, maintainable, and error-free through the build and deployment process.
+
+## Document Purpose & Reference Usage
+
+This document serves as a central reference for all developers working on the OSINT Dashboard project to understand and implement the project's code quality standards. It's intended to be used as:
+
+- An onboarding resource for new team members to quickly understand code quality expectations
+- A practical guide for fixing common linting and type-checking issues
+- A reference for standardizing coding practices across the team
+- A troubleshooting resource when resolving build failures related to code quality
+
+Developers should consult this document when writing new code, refactoring existing code, or addressing code quality issues flagged during code reviews or CI/CD processes. It complements the Type Checking Guide and Linting Guide by focusing on broader coding quality principles and practical examples of best practices.
