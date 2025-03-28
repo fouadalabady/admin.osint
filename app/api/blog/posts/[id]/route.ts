@@ -130,7 +130,7 @@ export async function PATCH(
     // Check if post exists and user is authorized to edit it
     const { data: existingPost, error: fetchError } = await supabase
       .from('blog_posts')
-      .select('author_id')
+      .select('author_id, slug, published_at')
       .eq('id', postId)
       .single();
     

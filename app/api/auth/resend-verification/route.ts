@@ -14,11 +14,21 @@ export async function POST(request: Request) {
     // Get Supabase admin client
     const supabase = createServerSupabaseClient();
 
-    // Check if user exists
-    const { data: user, error: userError } = await supabase.auth.admin.getUserByEmail(email);
-
-    if (userError || !user) {
-      console.error('Error fetching user:', userError);
+    // Check if user exists by listing users and filtering by email
+    const { data: usersData, error: userError } = await supabase.auth.admin.listUsers();
+    
+    if (userError) {
+      console.error('Error fetching users:', userError);
+      return NextResponse.json(
+        { error: 'Failed to check user existence' },
+        { status: 500 }
+      );
+    }
+    
+    // Find the user with the matching email
+    const user = usersData.users.find(u => u.email === email);
+    
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found with this email address' },
         { status: 404 }
@@ -32,7 +42,7 @@ export async function POST(request: Request) {
 
     // Store OTP verification record
     const { error: otpError } = await supabase.from('otp_verifications').insert({
-      user_id: user.user.id,
+      user_id: user.id,
       email: email,
       otp_hash: otpHash,
       purpose: 'email_verification',

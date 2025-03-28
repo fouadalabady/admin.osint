@@ -1,4 +1,5 @@
 import { DecoratorNode, EditorConfig, NodeKey, SerializedLexicalNode } from 'lexical'
+import * as React from 'react'
 
 export interface ImagePayload {
   src: string
@@ -8,7 +9,7 @@ export interface ImagePayload {
   key?: NodeKey
 }
 
-export class ImageNode extends DecoratorNode<JSX.Element> {
+export class ImageNode extends DecoratorNode<React.ReactElement> {
   __src: string
   __altText: string
   __width: number | undefined
@@ -52,7 +53,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return false
   }
 
-  decorate(): JSX.Element {
+  decorate(): React.ReactElement {
     return (
       <img
         src={this.__src}

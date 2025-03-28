@@ -49,15 +49,7 @@ export default function RegistrationsPage() {
   // Check if user has admin permissions
   const isAdmin = ['admin', 'super_admin'].includes(session?.user?.role as string);
 
-  useEffect(() => {
-    if (session && isAdmin) {
-      fetchRegistrations();
-    } else if (session && !isAdmin) {
-      setError('You do not have permission to view this page');
-      setIsLoading(false);
-    }
-  }, [session, isAdmin, activeTab, fetchRegistrations]);
-
+  // Define fetchRegistrations function before using it in useEffect
   const fetchRegistrations = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -75,6 +67,16 @@ export default function RegistrationsPage() {
       setIsLoading(false);
     }
   }, []);
+
+  // Use the function in useEffect
+  useEffect(() => {
+    if (session && isAdmin) {
+      fetchRegistrations();
+    } else if (session && !isAdmin) {
+      setError('You do not have permission to view this page');
+      setIsLoading(false);
+    }
+  }, [session, isAdmin, activeTab, fetchRegistrations]);
 
   const handleUpdateStatus = async (
     userId: string,

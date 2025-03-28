@@ -9,6 +9,7 @@ declare module 'next-auth' {
       id: string;
       role: UserRole;
     } & DefaultSession['user'];
+    lastActive?: number;
   }
 
   interface User {
@@ -21,5 +22,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: UserRole;
+    lastActive?: number;
   }
 }

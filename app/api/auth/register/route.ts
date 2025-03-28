@@ -2,17 +2,18 @@ import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { generateOTP, hashOTP, getOTPExpiry } from '@/lib/otp';
 import { sendEmail } from '@/lib/email';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { createRouteHandlerClient } from '@supabase/ssr';
+import { SupabaseClient, PostgrestError } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { DatabaseError } from '@/types/auth';
+
+// Define a local DatabaseError type since it's not exported from @/types/auth
+type DatabaseError = PostgrestError | null;
 
 interface TableCheckResult {
   otpTableExists: boolean;
   registrationTableExists: boolean;
   errors: {
-    otpTableError: DatabaseError | null;
-    registrationTableError: DatabaseError | null;
+    otpTableError: DatabaseError;
+    registrationTableError: DatabaseError;
   };
 }
 
@@ -36,8 +37,8 @@ async function tablesExist(supabase: SupabaseClient): Promise<TableCheckResult> 
     registrationTableExists: !!regData,
     errors: {
       // Use type assertion to convert PostgrestError to DatabaseError
-      otpTableError: otpError as DatabaseError | null,
-      registrationTableError: regError as DatabaseError | null,
+      otpTableError: otpError as DatabaseError,
+      registrationTableError: regError as DatabaseError,
     },
   };
 }

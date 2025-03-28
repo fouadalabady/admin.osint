@@ -6,9 +6,56 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Define appropriate types for resolver arguments
+interface PostsArgs {
+  page?: number
+  limit?: number
+  status?: string
+  categoryId?: string
+  tagId?: string
+  authorId?: string
+  direction?: string
+  featured?: boolean
+  search?: string
+}
+
+interface PostArgs {
+  slug: string
+}
+
+interface PostInput {
+  title: string
+  content: string
+  status?: string
+  category_id?: string
+  tag_ids?: string[]
+  is_featured?: boolean
+  direction?: string
+}
+
+interface CreatePostArgs {
+  input: PostInput
+}
+
+interface UpdatePostArgs {
+  id: string
+  input: Partial<PostInput>
+}
+
+interface DeletePostArgs {
+  id: string
+}
+
+interface Context {
+  user?: {
+    id: string
+    [key: string]: unknown
+  }
+}
+
 export const resolvers = {
   Query: {
-    posts: async (_, args) => {
+    posts: async (_: unknown, args: PostsArgs) => {
       const {
         page = 1,
         limit = 10,
@@ -69,7 +116,7 @@ export const resolvers = {
       }
     },
 
-    post: async (_, { slug }) => {
+    post: async (_: unknown, { slug }: PostArgs) => {
       const { data, error } = await supabase
         .from('blog_posts')
         .select(`
@@ -105,7 +152,7 @@ export const resolvers = {
   },
 
   Mutation: {
-    createPost: async (_, { input }, context) => {
+    createPost: async (_: unknown, { input }: CreatePostArgs, context: Context) => {
       // Check authentication
       if (!context.user) throw new GraphQLError('Unauthorized')
 
@@ -123,7 +170,7 @@ export const resolvers = {
       return data
     },
 
-    updatePost: async (_, { id, input }, context) => {
+    updatePost: async (_: unknown, { id, input }: UpdatePostArgs, context: Context) => {
       if (!context.user) throw new GraphQLError('Unauthorized')
 
       const { data, error } = await supabase
@@ -137,7 +184,7 @@ export const resolvers = {
       return data
     },
 
-    deletePost: async (_, { id }, context) => {
+    deletePost: async (_: unknown, { id }: DeletePostArgs, context: Context) => {
       if (!context.user) throw new GraphQLError('Unauthorized')
 
       const { error } = await supabase
@@ -151,7 +198,7 @@ export const resolvers = {
   },
 
   Post: {
-    comments: async (post) => {
+    comments: async (post: { id: string }) => {
       const { data, error } = await supabase
         .from('blog_comments')
         .select('*')

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   Card, 
@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClient } from '@supabase/supabase-js';
 import { AlertCircle, CheckCircle, EyeIcon, EyeOffIcon } from 'lucide-react';
 
-export default function CompleteProfile() {
+function CompleteProfileForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient(
@@ -199,9 +199,11 @@ export default function CompleteProfile() {
                   required
                   minLength={8}
                 />
-                <button 
-                  type="button" 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? (
@@ -209,41 +211,56 @@ export default function CompleteProfile() {
                   ) : (
                     <EyeIcon className="h-4 w-4" />
                   )}
-                </button>
+                </Button>
               </div>
-              <p className="text-xs text-gray-500">
-                Password must be at least 8 characters long.
-              </p>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
+              <Input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
               {passwordError && (
-                <p className="text-xs text-red-500">{passwordError}</p>
+                <p className="text-sm text-red-500">{passwordError}</p>
               )}
             </div>
           </CardContent>
           
-          <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || !name || !password || !confirmPassword}
-            >
-              {isLoading ? 'Completing...' : 'Complete Profile & Set Password'}
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="animate-spin mr-2">⚙️</span>
+                  Saving...
+                </>
+              ) : (
+                'Complete Profile'
+              )}
             </Button>
           </CardFooter>
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function CompleteProfile() {
+  return (
+    <Suspense fallback={
+      <div className="container flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md mx-auto p-8">
+          <div className="flex justify-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          </div>
+          <p className="text-center mt-4">Loading profile...</p>
+        </Card>
+      </div>
+    }>
+      <CompleteProfileForm />
+    </Suspense>
   );
 } 

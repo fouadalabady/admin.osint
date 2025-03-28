@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { nanoid } from "nanoid"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { createServerSupabaseClient } from "@/lib/supabase"
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

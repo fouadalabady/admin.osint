@@ -202,19 +202,19 @@ const NewBlogPost = () => {
       
       const result = await createBlogPostMutation(createPost, {
         title: formData.title,
-        slug: formData.slug,
+        slug: formData.slug || slugify(formData.title, { lower: true, strict: true }),
         content: formData.content,
-        excerpt: formData.excerpt,
-        featured_image: formData.featuredImage,
-        seo_title: formData.seo.title,
-        seo_description: formData.seo.description,
-        seo_keywords: formData.seo.keywords,
+        excerpt: formData.excerpt || undefined,
+        featured_image: formData.featuredImage || undefined,
+        seo_title: formData.seo.title || formData.title,
+        seo_description: formData.seo.description || formData.excerpt || undefined,
+        seo_keywords: formData.seo.keywords || undefined,
         status: formData.status,
         direction: formData.direction,
         author_id: authorId,
-        category_id: formData.category || null,
+        category_id: formData.category || undefined,
         is_featured: false,
-        published_at: formData.status === 'published' ? new Date().toISOString() : null
+        published_at: formData.status === 'published' ? new Date().toISOString() : undefined
       });
       
       if (result.error) {

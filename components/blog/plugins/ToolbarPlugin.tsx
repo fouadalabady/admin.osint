@@ -3,7 +3,8 @@ import {
   $getSelection,
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
-  SELECTION_CHANGE_COMMAND
+  SELECTION_CHANGE_COMMAND,
+  TextNode
 } from 'lexical'
 import { $setBlocksType } from '@lexical/selection'
 import {
@@ -11,6 +12,7 @@ import {
   $createQuoteNode,
   HeadingTagType
 } from '@lexical/rich-text'
+import { $createCodeNode } from '@lexical/code'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -115,6 +117,45 @@ export function ToolbarPlugin() {
     })
   }
 
+  const applyFontSize = (size: number) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        selection.getNodes().forEach(node => {
+          if (node.getType() === 'text') {
+            (node as TextNode).setStyle(`font-size: ${size}px`)
+          }
+        })
+      }
+    })
+  }
+
+  const applyTextColor = (color: string) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        selection.getNodes().forEach(node => {
+          if (node.getType() === 'text') {
+            (node as TextNode).setStyle(`color: ${color}`)
+          }
+        })
+      }
+    })
+  }
+
+  const applyBackgroundColor = (color: string) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        selection.getNodes().forEach(node => {
+          if (node.getType() === 'text') {
+            (node as TextNode).setStyle(`background-color: ${color}`)
+          }
+        })
+      }
+    })
+  }
+
   return (
     <div className="flex items-center gap-2 p-2 border-b">
       <Select value={blockType} onValueChange={(value: keyof typeof blockTypeToBlockName) => formatBlock(value)}>
@@ -133,16 +174,7 @@ export function ToolbarPlugin() {
       <Select value={fontSize.toString()} onValueChange={(value) => {
         const size = parseInt(value)
         setFontSize(size)
-        editor.update(() => {
-          const selection = $getSelection()
-          if ($isRangeSelection(selection)) {
-            selection.getNodes().forEach(node => {
-              if (node.getType() === 'text') {
-                node.setStyle(`font-size: ${size}px`)
-              }
-            })
-          }
-        })
+        applyFontSize(size)
       }}>
         <SelectTrigger className="w-[100px]">
           <SelectValue placeholder="Size" />
@@ -202,16 +234,7 @@ export function ToolbarPlugin() {
                 style={{ backgroundColor: color.value }}
                 onClick={() => {
                   setTextColor(color.value)
-                  editor.update(() => {
-                    const selection = $getSelection()
-                    if ($isRangeSelection(selection)) {
-                      selection.getNodes().forEach(node => {
-                        if (node.getType() === 'text') {
-                          node.setStyle(`color: ${color.value}`)
-                        }
-                      })
-                    }
-                  })
+                  applyTextColor(color.value)
                 }}
               />
             ))}
@@ -235,16 +258,7 @@ export function ToolbarPlugin() {
                 style={{ backgroundColor: color.value }}
                 onClick={() => {
                   setBgColor(color.value)
-                  editor.update(() => {
-                    const selection = $getSelection()
-                    if ($isRangeSelection(selection)) {
-                      selection.getNodes().forEach(node => {
-                        if (node.getType() === 'text') {
-                          node.setStyle(`background-color: ${color.value}`)
-                        }
-                      })
-                    }
-                  })
+                  applyBackgroundColor(color.value)
                 }}
               />
             ))}

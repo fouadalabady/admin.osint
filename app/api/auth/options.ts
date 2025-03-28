@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { supabase } from '@/lib/supabase';
-import { UserRole } from '@/types/auth';
+import { UserRole } from '@/lib/auth-types';
 
 interface CustomUser {
   id: string;
@@ -57,10 +57,18 @@ export const authOptions: NextAuthOptions = {
           // Assign role based on email for admin
           let role: UserRole = "user";
           if (credentials.email === "admin@osint.sa") {
-            role = "super_admin";
+            role = "admin";
           } else {
-            // Get role from user metadata if available
-            role = (user.user_metadata?.role as UserRole) || "user";
+            // Map role from user metadata to one of the allowed roles
+            const metadataRole = user.user_metadata?.role as string;
+            // Map roles to valid UserRole values
+            if (metadataRole === "super_admin" || metadataRole === "admin") {
+              role = "admin";
+            } else if (metadataRole === "editor" || metadataRole === "contributor") {
+              role = "editor";
+            } else {
+              role = "user";
+            }
           }
           
           console.log("Assigned role:", role);
@@ -87,7 +95,14 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         // Initial sign in
         console.log("JWT callback with user:", user.email);
-        token.role = user.role;
+        
+        // Ensure role is a valid UserRole
+        const validRole = (user.role as string) === 'admin' || 
+                          (user.role as string) === 'editor' || 
+                          (user.role as string) === 'user' ? 
+                          (user.role as UserRole) : 'user';
+        
+        token.role = validRole;
         token.id = user.id;
         token.email = user.email;
         token.name = user.name ?? null;

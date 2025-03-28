@@ -44,6 +44,18 @@ export interface BlogCategory {
   updated_at: string;
 }
 
+export interface BlogTag {
+  id: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Aliases for backward compatibility
+export type Category = BlogCategory;
+export type Tag = BlogTag;
+
 export interface BlogAuthor {
   id: string;
   name: string;

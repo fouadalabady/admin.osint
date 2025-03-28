@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/ssr'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: { slug: string } }
 ) {
-  const supabase = createRouteHandlerClient({ cookies })
+  const supabase = createServerSupabaseClient()
 
   const { data: post, error } = await supabase
     .from('posts')
@@ -29,7 +29,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { slug: string } }
 ) {
-  const supabase = createRouteHandlerClient({ cookies })
+  const supabase = createServerSupabaseClient()
   const body = await request.json()
 
   const { data: post, error } = await supabase

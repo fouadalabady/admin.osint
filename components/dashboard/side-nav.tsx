@@ -1,23 +1,23 @@
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  LayoutDashboard,
-  Users,
+  BarChart,
   FileText,
+  Users,
   Settings,
   Database,
-  BarChart,
+  LayoutDashboard,
   Mail,
   MessageSquare,
   FilePlus,
   PieChart,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
-const sidebarNavItems = [
+const sidebarNavItems: Array<NavItem | NavSection> = [
   {
     title: "Overview",
     href: "/dashboard",
@@ -100,25 +100,47 @@ const sidebarNavItems = [
   },
 ];
 
-interface SideNavProps extends React.HTMLAttributes<HTMLDivElement> {}
+// Types for sidebar items or sections
+interface NavItem {
+  title: string;
+  href: string;
+  icon: React.ReactNode;
+  requireAdmin?: boolean;
+  requireSuperAdmin?: boolean;
+}
 
-export function SideNav({ className, ...props }: SideNavProps) {
+// Section of items
+interface NavSection {
+  section: string;
+  items?: NavItem[];
+  requireAdmin?: boolean;
+  requireSuperAdmin?: boolean;
+}
+
+// Props for SideNav
+interface SideNavProps {
+  className?: string;
+}
+
+export function SideNav({ className }: SideNavProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isSuperAdmin = session?.user?.role === "super_admin";
   
   const filteredItems = sidebarNavItems.filter((item) => {
     if ('section' in item) {
-      // Filter section's items
-      item.items = item.items.filter(
-        (subItem) =>
-          (!subItem.requireAdmin && !subItem.requireSuperAdmin) ||
-          (subItem.requireAdmin &&
-            ["admin", "super_admin"].includes(session?.user?.role as string)) ||
-          (subItem.requireSuperAdmin && isSuperAdmin)
-      );
+      // Filter section's items if they exist
+      if (item.items && item.items.length > 0) {
+        item.items = item.items.filter(
+          (subItem) =>
+            (!subItem.requireAdmin && !subItem.requireSuperAdmin) ||
+            (subItem.requireAdmin &&
+              ["admin", "super_admin"].includes(session?.user?.role as string)) ||
+            (subItem.requireSuperAdmin && isSuperAdmin)
+        );
+      }
       // Only include section if it has items
-      return item.items.length > 0;
+      return item.items && item.items.length > 0;
     }
     
     // Filter regular items
@@ -129,7 +151,7 @@ export function SideNav({ className, ...props }: SideNavProps) {
   });
 
   return (
-    <ScrollArea className={cn("h-full", className)} {...props}>
+    <ScrollArea className={cn("h-full", className)}>
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
@@ -145,7 +167,7 @@ export function SideNav({ className, ...props }: SideNavProps) {
                       {item.section}
                     </h3>
                     <div className="space-y-1">
-                      {item.items.map((subItem) => (
+                      {item.items?.map((subItem) => (
                         <Button
                           key={subItem.href}
                           variant={pathname === subItem.href ? "secondary" : "ghost"}

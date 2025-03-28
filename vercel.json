@@ -35,18 +35,6 @@
       ]
     }
   ],
-  "builds": [
-    {
-      "src": "next.config.mjs",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/health",
-      "dest": "/api/health"
-    }
-  ],
   "crons": [
     {
       "path": "/api/cron/cleanup-verification-tokens",
