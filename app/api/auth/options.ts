@@ -102,12 +102,15 @@ export const authOptions: NextAuthOptions = {
                           (user.role as string) === 'user' ? 
                           (user.role as UserRole) : 'user';
         
+        console.log("Assigned valid role:", validRole);
+        
         token.role = validRole;
         token.id = user.id;
         token.email = user.email;
         token.name = user.name ?? null;
         token.lastActive = Date.now();
       } else {
+        console.log("JWT callback with existing token, user:", token.email);
         token.lastActive = Date.now();
       }
 
@@ -123,6 +126,9 @@ export const authOptions: NextAuthOptions = {
         
         // Add lastActive to session for client-side awareness
         session.lastActive = token.lastActive;
+        console.log("Session updated with user info:", session.user.email, "role:", session.user.role);
+      } else {
+        console.warn("Session callback with invalid token or missing session.user");
       }
       return session;
     },

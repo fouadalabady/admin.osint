@@ -49,21 +49,33 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      console.log("Attempting to sign in with:", data.email);
+      
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
         redirect: false,
       });
 
+      console.log("SignIn result:", result);
+
       if (result?.error) {
-        setError("Invalid email or password. Please try again.");
+        console.error("Authentication error:", result.error);
+        setError(result.error || "Invalid email or password. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      if (result?.ok) {
+        console.log("Sign-in successful, redirecting to dashboard");
+        // Force a hard navigation instead of client-side routing
+        window.location.href = "/dashboard";
+      } else {
+        setError("Sign-in succeeded but response indicates failure. Please try again.");
+        setIsLoading(false);
+      }
     } catch (error) {
+      console.error("Unexpected error during sign-in:", error);
       setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }

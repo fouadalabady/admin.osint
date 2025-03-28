@@ -138,12 +138,12 @@ export async function middleware(request: NextRequest) {
       response.headers.set(
         'Content-Security-Policy',
         `default-src 'self'; 
-        script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:; 
-        style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com; 
-        img-src 'self' data: https:; 
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app https://vercel.live https://*.vercel.com; 
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+        img-src 'self' data: blob: https:; 
         font-src 'self' https://fonts.gstatic.com data:; 
-        connect-src 'self' https://*.supabase.co;
-        frame-ancestors 'none';
+        connect-src 'self' https://*.supabase.co https://*.vercel.app https://*.vercel.com;
+        frame-ancestors 'self';
         base-uri 'self';
         form-action 'self';`
       )
