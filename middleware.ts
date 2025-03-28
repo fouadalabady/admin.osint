@@ -137,15 +137,7 @@ export async function middleware(request: NextRequest) {
 
       response.headers.set(
         'Content-Security-Policy',
-        `default-src 'self'; 
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app https://vercel.live https://*.vercel.com https://www.google.com https://www.gstatic.com https://*.vercel.live; 
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-        img-src 'self' data: blob: https:; 
-        font-src 'self' https://fonts.gstatic.com data:; 
-        connect-src 'self' https://*.supabase.co https://*.vercel.app https://*.vercel.com https://*.vercel.live;
-        frame-ancestors 'self';
-        base-uri 'self';
-        form-action 'self';`
+        `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app https://vercel.live https://*.vercel.com https://www.google.com https://www.gstatic.com https://*.vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://*.vercel.com https://*.vercel.live; frame-ancestors 'self'; base-uri 'self'; form-action 'self';`
       )
 
       // Add other security headers
