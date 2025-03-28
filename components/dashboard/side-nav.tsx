@@ -17,6 +17,9 @@ import {
   PieChart,
 } from "lucide-react";
 
+// Define UserRole type to match the middleware
+type UserRole = 'admin' | 'editor' | 'super_admin';
+
 const sidebarNavItems: Array<NavItem | NavSection> = [
   {
     title: "Overview",
@@ -125,7 +128,7 @@ interface SideNavProps {
 export function SideNav({ className }: SideNavProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const isSuperAdmin = session?.user?.role === "super_admin";
+  const isSuperAdmin = (session?.user?.role as UserRole) === "super_admin";
   
   const filteredItems = sidebarNavItems.filter((item) => {
     if ('section' in item) {
@@ -135,7 +138,7 @@ export function SideNav({ className }: SideNavProps) {
           (subItem) =>
             (!subItem.requireAdmin && !subItem.requireSuperAdmin) ||
             (subItem.requireAdmin &&
-              ["admin", "super_admin"].includes(session?.user?.role as string)) ||
+              ["admin", "super_admin"].includes(session?.user?.role as UserRole)) ||
             (subItem.requireSuperAdmin && isSuperAdmin)
         );
       }
@@ -146,7 +149,7 @@ export function SideNav({ className }: SideNavProps) {
     // Filter regular items
     return (!item.requireAdmin && !item.requireSuperAdmin) ||
       (item.requireAdmin &&
-        ["admin", "super_admin"].includes(session?.user?.role as string)) ||
+        ["admin", "super_admin"].includes(session?.user?.role as UserRole)) ||
       (item.requireSuperAdmin && isSuperAdmin);
   });
 
