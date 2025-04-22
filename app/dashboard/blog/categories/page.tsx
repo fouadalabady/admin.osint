@@ -16,6 +16,7 @@ import {
   FileText, 
   Loader2 
 } from "lucide-react"
+import { useDeleteCategory, deleteCategoryMutation } from "@/lib/graphql/hooks/useCategory"
 
 export default function CategoriesPage() {
   const { toast } = useToast()
@@ -33,6 +34,8 @@ export default function CategoriesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  
+  const [deleteCategory, { loading: deleteLoading }] = useDeleteCategory()
   
   // Fetch categories
   useEffect(() => {
@@ -166,29 +169,36 @@ export default function CategoriesPage() {
     }
     
     try {
-      const response = await fetch(`/api/blog/categories/${categoryId}`, {
-        method: "DELETE"
+      const result = await deleteCategoryMutation(deleteCategory, categoryId)
+      
+      if (result.error) {
+        throw new Error(result.error)
+      }
+      
+      toast({
+        title: "Success",
+        description: "Category deleted successfully"
       })
       
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Category deleted successfully"
-        })
-        
-        // Remove the deleted category from state
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId))
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to delete category")
-      }
+      // Remove the deleted category from state
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId))
     } catch (error) {
       console.error("Error deleting category:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete category",
-        variant: "destructive"
-      })
+      // Check if this is a specific error about posts using this category
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete category"
+      if (errorMessage.includes("posts") && errorMessage.includes("associated")) {
+        toast({
+          title: "Cannot Delete Category",
+          description: errorMessage,
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive"
+        })
+      }
     }
   }
   
@@ -309,7 +319,7 @@ export default function CategoriesPage() {
               <CardFooter className="flex justify-between pt-4 border-t">
                 <div className="flex items-center text-muted-foreground text-sm">
                   <FileText className="h-4 w-4 mr-1" />
-                  <span>0 posts</span>
+                  <span>{category.postCount || 0} posts</span>
                 </div>
                 
                 <div className="flex gap-2">

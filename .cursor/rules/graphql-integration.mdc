@@ -1,5 +1,5 @@
 ---
-description: # GraphQL Integration with Supabase  This document outlines how we've integrated GraphQL with Supabase for the OSINT Dashboard project.  ## Purpose & Usage Guide  This documentation serves as the definitive reference for the GraphQL implementation in the OSINT Dashboard project. It's designed to be used by:  - **Frontend developers** implementing UI components that consume GraphQL data - **Backend developers** maintaining or extending the GraphQL schema and resolvers - **New team members** getting familiar with the data fetching architecture - **DevOps engineers** setting up the necessary infrastructure for GraphQL  You should consult this document when:  - Building new features that require data fetching from the API - Diagnosing performance issues related to data queries - Implementing authorization rules for GraphQL operations - Extending the schema with new types, queries, or mutations - Setting up development environments with GraphQL support - Understanding the security model for GraphQL endpoints  This guide complements the main Project Architecture document but provides deeper technical details specific to GraphQL implementation and usage patterns.
+description: # GraphQL Integration with Supabase  This document outlines how we've integrated GraphQL with Supabase for the OSINT Dashboard project.  ## Purpose & Usage Guide  This documentation serves as the definitive reference for the GraphQL implementation in the OSINT Dashboard project. It's designed to be used by:  - **Frontend developers** implementing UI components that consume GraphQL data - **Backend developers** maintaining or extending the GraphQL schema and resolvers - **New team members** getting familiar with the data fetching architecture - **DevOps engineers** setting up the necessary infrastructure for GraphQL  You should consult this document when:  - Building new features that require data fetching from the API - Diagnosing performance issues related to data queries - Implementing authorization rules for GraphQL operations - Extending the schema with new types, queries, or mutations - Setting up development environments with GraphQL support - Understanding the security model for GraphQL endpoints  This guide complements the main Project Architecture document but provides deeper technical details specific to GraphQL implementation and usage patterns.  ## Overview  We use Apollo Client (@apollo/client ^3.13.5) to interact with our GraphQL API, which is implemented using GraphQL Yoga. This provides a more efficient and type-safe way to fetch and manipulate data compared to traditional REST endpoints.
 globs: 
 alwaysApply: false
 ---
@@ -33,7 +33,7 @@ We use Apollo Client (@apollo/client ^3.13.5) to interact with our GraphQL API, 
 
 ## Implementation Details
 
-### Server-Side Setup
+### Server-Side Architecture
 
 1. **GraphQL Yoga Server**:
    - Located in the `graphql` directory at the project root
@@ -46,6 +46,44 @@ We use Apollo Client (@apollo/client ^3.13.5) to interact with our GraphQL API, 
    - Includes queries and mutations for all major entities
    - Supports filtering, pagination, and sorting
    - Leverages GraphQL's strong typing for data validation
+
+3. **Efficient Resolvers**:
+   - Implements batched fetching to avoid N+1 query problems
+   - Uses TypeScript interfaces for type safety
+   - Includes comprehensive error handling with detailed messages
+   - Optimized for performance with minimal database queries
+
+### Key Improvements in the Latest Implementation
+
+The GraphQL resolvers have been completely rewritten with several significant improvements:
+
+1. **Proper TypeScript Integration**:
+   - Strong typing with interfaces for all database entities and resolver arguments
+   - Type-safe data manipulation throughout the codebase
+   - Elimination of `any` types where possible for improved code quality
+
+2. **Optimized Data Fetching**:
+   - Batch queries to minimize database round-trips
+   - Parallel data fetching where appropriate
+   - Efficient caching of relationships
+
+3. **Enhanced Error Handling**:
+   - Comprehensive try/catch blocks throughout
+   - Detailed error messages with proper context
+   - Graceful fallbacks for missing data
+   - Consistent error response format
+
+4. **Relationship Handling**:
+   - Explicit manual joins for cross-schema relationships
+   - Properly typed relationship data
+   - Support for nested data with proper null handling
+   - Efficient caching of relationship data to avoid redundant queries
+
+5. **Performance Optimizations**:
+   - Minimized database queries through data batching
+   - Efficient data transformation with map/reduce patterns
+   - Pagination implemented with proper cursor support
+   - Memory-efficient data structures
 
 ### Client-Side Setup
 
@@ -79,158 +117,338 @@ GraphQL requests are secured through:
 1. **JWT Authentication**:
    - Tokens from Supabase/NextAuth are included in request headers
    - Server-side middleware validates tokens before processing requests
+   - Context provides user information to resolvers
 
 2. **Role-Based Access Control**:
    - Resolvers check user permissions before executing operations
    - Field-level security prevents unauthorized access to sensitive data
+   - Admin-only operations are clearly marked
 
-3. **Rate Limiting**:
-   - Configurable rate limits prevent abuse
-   - Different limits for authenticated vs. anonymous users
+## Key GraphQL Operations
 
-## Usage Examples
+### Queries
 
-### Fetching a Blog Post by Slug
-
-```tsx
-import { useGetBlogPostBySlug } from '@/lib/graphql/hooks/useBlogPost';
-
-function BlogPostComponent({ slug }) {
-  const { data, loading, error } = useGetBlogPostBySlug(slug);
-  
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  
-  const post = data?.blogPostsCollection?.edges[0]?.node;
-  
-  return (
-    <div>
-      <h1>{post.title}</h1>
-      <div dangerouslySetInnerHTML={{ __html: post.content }} />
-    </div>
-  );
-}
-```
-
-### Creating a Blog Post
-
-```tsx
-import { useCreateBlogPost, createBlogPostMutation } from '@/lib/graphql/hooks/useBlogPost';
-
-function CreatePostComponent() {
-  const [createPost] = useCreateBlogPost();
-  
-  const handleSubmit = async (formData) => {
-    const result = await createBlogPostMutation(createPost, {
-      title: formData.title,
-      slug: formData.slug,
-      content: formData.content,
-      // ... other fields
-    });
-    
-    if (result.error) {
-      // Handle error
-    } else {
-      // Success
+```graphql
+# Fetch posts with filtering and pagination
+query GetPosts($page: Int, $limit: Int, $categoryId: ID, $tagId: ID) {
+  posts(page: $page, limit: $limit, categoryId: $categoryId, tagId: $tagId) {
+    edges {
+      node {
+        id
+        title
+        slug
+        excerpt
+        featuredImage
+        author {
+          id
+          name
+        }
+        category {
+          id
+          name
+        }
+        tags {
+          id
+          name
+        }
+        createdAt
+      }
     }
-  };
-  
-  // Render form
-}
-```
-
-### Updating a Blog Post
-
-```tsx
-import { useUpdateBlogPost, updateBlogPostMutation } from '@/lib/graphql/hooks/useBlogPost';
-
-function EditPostComponent({ postId }) {
-  const [updatePost] = useUpdateBlogPost();
-  
-  const handleUpdate = async (formData) => {
-    const result = await updateBlogPostMutation(updatePost, postId, {
-      title: formData.title,
-      content: formData.content,
-      // ... other fields
-    });
-    
-    if (result.error) {
-      // Handle error
-    } else {
-      // Success
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
     }
-  };
-  
-  // Render form
+    totalCount
+  }
+}
+
+# Get a single post by slug
+query GetPost($slug: String!) {
+  post(slug: $slug) {
+    id
+    title
+    slug
+    content
+    featuredImage
+    author {
+      id
+      name
+    }
+    category {
+      id
+      name
+    }
+    tags {
+      id
+      name
+    }
+    viewCount
+    publishedAt
+    createdAt
+    updatedAt
+  }
+}
+
+# Fetch categories
+query GetCategories {
+  categories {
+    id
+    name
+    slug
+    description
+    posts {
+      id
+      title
+    }
+  }
+}
+
+# Fetch tags
+query GetTags {
+  tags {
+    id
+    name
+    slug
+    posts {
+      id
+      title
+    }
+  }
 }
 ```
 
-## Rich Text Editor Integration
+### Mutations
 
-Our GraphQL API is seamlessly integrated with our rich text editors:
+```graphql
+# Create a new post
+mutation CreatePost($input: CreatePostInput!) {
+  createPost(input: $input) {
+    id
+    title
+    slug
+    status
+  }
+}
 
-1. **Lexical Editor**:
-   - Used for blog posts and complex content creation
-   - Sends structured content via GraphQL mutations
-   - Preserves formatting and media references
+# Update an existing post
+mutation UpdatePost($id: ID!, $input: UpdatePostInput!) {
+  updatePost(id: $id, input: $input) {
+    id
+    title
+    slug
+    updatedAt
+  }
+}
 
-2. **TipTap Editor**:
-   - Alternative editor for simpler content needs
-   - Full integration with GraphQL operations
-   - Supports extensions for color, highlighting, images, and more
+# Delete a post
+mutation DeletePost($id: ID!) {
+  deletePost(id: $id)
+}
 
-## Environment Variables
+# Create a new category
+mutation CreateCategory($input: CreateCategoryInput!) {
+  createCategory(input: $input) {
+    id
+    name
+    slug
+  }
+}
 
-The GraphQL integration requires the following environment variables:
-
+# Create a new tag
+mutation CreateTag($input: CreateTagInput!) {
+  createTag(input: $input) {
+    id
+    name
+    slug
+  }
+}
 ```
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_GRAPHQL_ENDPOINT=your-api-url/graphql  # URL to your GraphQL Yoga endpoint
-GRAPHQL_SERVER_SECRET=your-server-secret-key       # Used for server-to-server authentication
+
+## Troubleshooting Common Issues
+
+1. **Relationship Data Not Loading**
+   - Check that your query includes the nested fields you need
+   - Verify that the relationship field is correctly defined in the schema
+   - Ensure the database has the correct foreign key relationships
+   - Look for null values in relationship fields that might cause errors
+
+2. **Schema Not Refreshing in Development**
+   - Restart the development server completely
+   - Clear Apollo Client cache
+   - Use the `disableCache: true` option in development
+   - Check for schema syntax errors
+
+3. **Authentication Issues**
+   - Verify that your JWT token is valid
+   - Check that the user has the necessary permissions
+   - Ensure the token is included in the request headers
+   - Look for token expiration issues
+
+4. **Performance Problems**
+   - Limit the fields you request to only what you need
+   - Use pagination to limit result sets
+   - Monitor resolver execution time
+   - Check for N+1 query problems in relationships
+
+## Example Implementation: Post Resolver
+
+The post resolver is a good example of our efficient implementation approach:
+
+```typescript
+post: async (_: unknown, { slug }: PostArgs) => {
+  console.log(`Fetching post with slug: ${slug}`);
+  try {
+    // Get post by slug
+    const { data: post, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log(`Post not found with slug: ${slug}`);
+        return null;
+      }
+      throw new GraphQLError(`Failed to fetch post: ${error.message}`);
+    }
+
+    // Get related data in parallel for efficiency
+    const [authorResult, categoryResult, tagsResult] = await Promise.all([
+      // Get author
+      post.author_id ? supabase
+        .from('users')
+        .select('id, email, user_metadata')
+        .eq('id', post.author_id)
+        .single() : Promise.resolve({ data: null }),
+      
+      // Get category
+      post.category_id ? supabase
+        .from('blog_categories')
+        .select('*')
+        .eq('id', post.category_id)
+        .single() : Promise.resolve({ data: null }),
+      
+      // Get tags
+      supabase
+        .from('blog_posts_tags')
+        .select('tag_id')
+        .eq('post_id', post.id)
+    ]);
+
+    // Process author data
+    const author = authorResult.data;
+    
+    // Process category data
+    const category = categoryResult.data;
+    
+    // Process tags data
+    let tags = [];
+    if (tagsResult.data && tagsResult.data.length > 0) {
+      const tagIds = tagsResult.data.map(pt => pt.tag_id);
+      const { data: tagsData } = await supabase
+        .from('blog_tags')
+        .select('*')
+        .in('id', tagIds);
+      
+      tags = tagsData || [];
+    }
+
+    // Transform to GraphQL format with proper relationships
+    return {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      featuredImage: post.featured_image,
+      author: author ? {
+        id: author.id,
+        email: author.email,
+        name: author.user_metadata?.name || author.email.split('@')[0],
+        role: 'author'
+      } : null,
+      category: category ? {
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        direction: category.direction || 'ltr'
+      } : null,
+      tags: tags.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug
+      })),
+      status: post.status,
+      isFeatured: post.is_featured,
+      viewCount: post.view_count,
+      publishedAt: post.published_at,
+      createdAt: post.created_at,
+      updatedAt: post.updated_at,
+      seoTitle: post.seo_title,
+      seoDescription: post.seo_description,
+      seoKeywords: post.seo_keywords,
+      direction: post.direction
+    };
+  } catch (error) {
+    console.error(`Error fetching post with slug ${slug}:`, error);
+    throw new GraphQLError('Failed to fetch post');
+  }
+}
 ```
 
-## Benefits Over REST API
+## Best Practices
 
-1. **Reduced Over-fetching**: Only fetch the fields you need for each component
-2. **Single Request for Complex Data**: Get related data in a single request
-3. **Type Safety**: Better type definitions and validation
-4. **Real-time Capabilities**: Easier to implement with subscriptions
-5. **Consistent Interface**: Same interface for all data operations
-6. **Self-documenting API**: Introspection provides built-in documentation
-7. **Optimized Network Performance**: Fewer HTTP requests and reduced payload size
+1. **Write Type-Safe Code**
+   - Use TypeScript interfaces for all input/output types
+   - Define explicit types for database entities
+   - Avoid `any` types wherever possible
 
-## Performance Optimizations
+2. **Optimize Database Queries**
+   - Batch related queries to avoid N+1 problems
+   - Use Promise.all for parallel data fetching
+   - Select only the columns you need
+   - Use efficient join strategies
 
-1. **Caching Strategy**:
-   - Apollo InMemoryCache for client-side caching
-   - Type policies for normalized data storage
-   - Custom cache invalidation for data consistency
+3. **Handle Errors Gracefully**
+   - Wrap resolver logic in try/catch blocks
+   - Provide meaningful error messages
+   - Log errors with proper context
+   - Return appropriate HTTP status codes
 
-2. **Batching and Deduplication**:
-   - Automatic query batching to reduce network requests
-   - Request deduplication to prevent redundant fetches
+4. **Design Clear Schema Types**
+   - Follow GraphQL naming conventions
+   - Use meaningful field names
+   - Document types and fields
+   - Design with client needs in mind
 
-3. **Prefetching and Preloading**:
-   - Strategic prefetching for anticipated user actions
-   - Data preloading for important application paths
-
-## Error Handling
-
-1. **Client-Side Errors**:
-   - Standardized error presentation UI components
-   - Automatic retry logic for transient failures
-   - Detailed error logging for debugging
-
-2. **Server-Side Errors**:
-   - Structured error responses with error codes
-   - Contextual error messages for developers
-   - Security-conscious error handling that doesn't leak sensitive information
+5. **Implement Proper Authentication**
+   - Always check user permissions in resolvers
+   - Pass user context to nested resolvers
+   - Keep sensitive operations behind authentication
+   - Log authentication failures
 
 ## Future Enhancements
 
-1. **Subscriptions**: Real-time updates with GraphQL subscriptions
-2. **Code Generation**: Automated type generation from GraphQL schema
-3. **Persisted Queries**: Hash-based query identification for security and performance
-4. **Federation**: Distributed GraphQL services for scaling
-5. **Advanced Monitoring**: GraphQL-specific performance metrics and insights
+1. **Automated Code Generation**
+   - Generate TypeScript types from GraphQL schema
+   - Automate client-side hook generation
+   - Generate comprehensive schema documentation
+
+2. **Enhanced Caching**
+   - Implement more sophisticated caching strategies
+   - Add cache invalidation for mutations
+   - Implement persisted queries
+
+3. **Performance Monitoring**
+   - Add timing instrumentation to resolvers
+   - Track resolver performance metrics
+   - Implement query complexity analysis
+
+4. **Advanced Security**
+   - Implement field-level access control
+   - Add rate limiting for complex queries
+   - Implement query depth limiting

@@ -10,6 +10,23 @@ import {
 } from '../operations/blog';
 import { BlogPost, BlogPostInput } from '@/types/blog';
 
+// Use a custom interface that matches the resolver's expected format
+export interface BlogPostInputForResolver {
+  title: string;
+  content: string;
+  excerpt?: string;
+  featured_image?: string;
+  seo_title?: string;
+  seo_description?: string;
+  seo_keywords?: string;
+  status?: string;
+  direction?: string;
+  category_id?: string;
+  tag_ids?: string[];
+  is_featured?: boolean;
+  published_at?: string;
+}
+
 export const useGetBlogPostBySlug = (slug: string) => {
   return useQuery(GET_BLOG_POST_BY_SLUG, {
     variables: { slug },
@@ -19,18 +36,26 @@ export const useGetBlogPostBySlug = (slug: string) => {
 
 export const useGetBlogPosts = (
   page: number = 1, 
-  pageSize: number = 10,
-  filter = {},
-  orderBy: Array<Record<string, string>> = []
+  limit: number = 10,
+  status?: string,
+  categoryId?: string,
+  tagId?: string,
+  authorId?: string,
+  direction?: string,
+  featured?: boolean,
+  search?: string
 ) => {
-  const offset = (page - 1) * pageSize;
-  
   return useQuery(GET_BLOG_POSTS, {
     variables: {
-      first: pageSize,
-      offset,
-      filter,
-      orderBy
+      page,
+      limit,
+      status,
+      categoryId,
+      tagId,
+      authorId,
+      direction,
+      featured,
+      search
     }
   });
 };
@@ -50,15 +75,15 @@ export const useDeleteBlogPost = () => {
 // Helper function to create a new blog post
 export const createBlogPostMutation = async (
   createPost: ReturnType<typeof useCreateBlogPost>[0],
-  input: BlogPostInput
+  input: BlogPostInputForResolver
 ) => {
   try {
     const { data } = await createPost({
       variables: {
-        objects: [input]
+        input
       }
     });
-    return { data: data?.insertIntoblog_postsCollection?.records[0], error: null };
+    return { data: data?.createPost, error: null };
   } catch (error) {
     console.error('Error creating blog post:', error);
     return { data: null, error: error instanceof Error ? error.message : 'Failed to create blog post' };
@@ -69,16 +94,16 @@ export const createBlogPostMutation = async (
 export const updateBlogPostMutation = async (
   updatePost: ReturnType<typeof useUpdateBlogPost>[0],
   id: string,
-  input: Partial<BlogPostInput>
+  input: Partial<BlogPostInputForResolver>
 ) => {
   try {
     const { data } = await updatePost({
       variables: {
-        filter: { id: { eq: id } },
-        set: input
+        id,
+        input
       }
     });
-    return { data: data?.updateblog_postsCollection?.records[0], error: null };
+    return { data: data?.updatePost, error: null };
   } catch (error) {
     console.error('Error updating blog post:', error);
     return { data: null, error: error instanceof Error ? error.message : 'Failed to update blog post' };
@@ -93,10 +118,10 @@ export const deleteBlogPostMutation = async (
   try {
     const { data } = await deletePost({
       variables: {
-        filter: { id: { eq: id } }
+        id
       }
     });
-    return { data: data?.deleteFromblog_postsCollection?.records[0], error: null };
+    return { data: data?.deletePost, error: null };
   } catch (error) {
     console.error('Error deleting blog post:', error);
     return { data: null, error: error instanceof Error ? error.message : 'Failed to delete blog post' };

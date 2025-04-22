@@ -419,20 +419,51 @@ function Editor({
   rtl
 }: LexicalEditorProps) {
   const [editor] = useLexicalComposerContext()
-  
+  const [isInitialContentSet, setIsInitialContentSet] = useState(false);
+
+  // Effect to set initial content from the JSON string
+  useEffect(() => {
+    // Only run if content exists, editor is ready, and initial state isn't set
+    if (content && editor && !isInitialContentSet) {
+      try {
+        const initialEditorState = editor.parseEditorState(content); // Parse the JSON string
+        editor.setEditorState(initialEditorState);
+        setIsInitialContentSet(true);
+      } catch (error) {
+        console.error("Error parsing initial editor state JSON:", error);
+        // Optional: Clear editor or show error message if parsing fails
+        editor.update(() => {
+          $getRoot().clear();
+        });
+        setIsInitialContentSet(true); // Mark as set even on error to avoid loops
+      }
+    }
+    // Ensure editor is editable based on prop
+    editor.setEditable(editable ?? true);
+
+  }, [content, editor, isInitialContentSet, editable]); // Add editable to dependency array
+
+  const handleEditorChange = (state: EditorState) => {
+    // Only trigger onChange after initial content is set
+    if (!isInitialContentSet) return;
+
+    let currentContentJson = "";
+    let textContent = "";
+
+    state.read(() => {
+      // Serialize the current state to JSON string
+      currentContentJson = JSON.stringify(editor.getEditorState().toJSON());
+      textContent = $getRoot().getTextContent();
+    });
+
+    // Pass the JSON string and plain text back up
+    onChange(currentContentJson, textContent);
+  };
+
   // Calculate the editor styles
   const editorStyle: React.CSSProperties = {
     minHeight,
     direction: rtl ? 'rtl' : 'ltr'
-  }
-  
-  // Handler for content changes
-  const handleEditorChange = (state: EditorState) => {
-    editor.update(() => {
-      const htmlContent = $generateHtmlFromNodes(editor)
-      const textContent = $getRoot().getTextContent()
-      onChange(htmlContent, textContent)
-    })
   }
 
   return (
@@ -479,7 +510,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
   editable = true,
   rtl = false
 }) => {
-  // Initialize the editor config
+  // Initialize the editor config WITHOUT the problematic editorState
   const initialConfig = {
     namespace: 'LexicalEditor',
     theme,
@@ -497,12 +528,8 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
       TableNode,
       TableCellNode,
       TableRowNode
+      // Add ImageNode if you have it registered
     ],
-    editorState: content ? () => {
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(content, 'text/html')
-      return doc.body.innerHTML
-    } : undefined,
     editable
   }
 

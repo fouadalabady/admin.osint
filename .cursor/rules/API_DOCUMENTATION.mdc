@@ -1,12 +1,12 @@
 ---
-description: This document serves as the comprehensive API reference for the OSINT Blog headless API system. It's designed to be used by:  - Frontend developers integrating with the blog API - Backend developers maintaining or extending the API - Third-party integrators building external applications - QA engineers testing API functionality - Technical writers creating derived documentation  The API documentation should be consulted when: - Implementing client applications that consume the blog API - Developing new API endpoints or modifying existing ones - Debugging API integration issues - Planning content migration from other systems - Understanding security requirements for API access - Determining appropriate rate limits and caching strategies - Implementing SEO and social media optimization features  This reference is particularly valuable for development teams working on the public-facing components of the OSINT Dashboard project, as it provides a complete specification of available endpoints, request/response formats, authentication requirements, and security considerations. It complements the Project Architecture document by providing det
+description: This document serves as the comprehensive API reference for the OSINT Blog headless API system. It's designed to be used by:  - Frontend developers integrating with the blog API - Backend developers maintaining or extending the API - Third-party integrators building external applications - QA engineers testing API functionality - Technical writers creating derived documentation  The API documentation should be consulted when: - Implementing client applications that consume the blog API - Developing new API endpoints or modifying existing ones - Debugging API integration issues - Planning content migration from other systems - Understanding security requirements for API access - Determining appropriate rate limits and caching strategies  This reference is particularly valuable for development teams working on the public-facing components of the OSINT Dashboard project, as it provides a complete specification of available endpoints, request/response formats, authentication requirements, and security considerations. It complements the Project Architecture document by providing detailed API-specific information that's essential for proper integration and usage of the headless blog system.
 globs: 
 alwaysApply: false
 ---
 # OSINT Blog Headless API Documentation
 
 ## Overview
-This documentation describes the headless blog API system built with Next.js and Supabase. The system provides a complete backend for managing a multilingual blog with support for posts, categories, tags, media, and user management.
+This documentation describes the unified headless blog API system built with Next.js and Supabase. The system provides a complete backend for managing a multilingual blog with support for posts, categories, tags, media, and user management.
 
 ## Implementation Status Key
 - ✅ **Implemented** - Feature is fully implemented and available
@@ -21,752 +21,466 @@ Development: http://localhost:3000/api
 ```
 
 ## Authentication ✅
-The API uses JWT tokens for authentication. Include the token in the Authorization header:
+The API uses JWT tokens for authentication for the dashboard and management endpoints. Public endpoints do not require authentication.
+
+For authenticated endpoints, include the token in the Authorization header:
 ```
 Authorization: Bearer <your_jwt_token>
 ```
 
+## Unified API Design ✅
+
+The API architecture has been completely refactored to provide a cleaner, more maintainable, and efficient design. The key improvements include:
+
+1. **Single Unified Public Endpoint**: 
+   ```
+   GET /api/public/blog
+   ```
+   All public content is now available through a single endpoint that accepts various query parameters to filter and retrieve different types of content.
+
+2. **Real-time Updates via Webhooks**:
+   ```
+   POST /api/public/blog
+   ```
+   Headless sites can subscribe to real-time updates, getting notified automatically when content changes.
+
+3. **Built-in Caching**:
+   The API includes smart caching directives to improve performance while ensuring data freshness.
+
+4. **Improved Error Handling**:
+   Comprehensive error reporting with detailed messages for easier debugging.
+
+## Public API Endpoint ✅
+
+### Fetch Content
+```http
+GET /api/public/blog
+```
+
+Query Parameters:
+- `resource` (string): What to fetch ('posts', 'post', 'categories', 'tags', 'featured')
+- `slug` (string): Required when resource is 'post'
+- `page` (integer): Page number for pagination (default: 1)
+- `limit` (integer): Items per page (default: 10)
+- `categoryId` (uuid): Filter by category ID
+- `tagId` (uuid): Filter by tag ID
+- `search` (string): Search term for filtering posts
+- `direction` (string): Filter by content direction ('ltr', 'rtl')
+- `cacheBuster` (string): Force cache refresh
+
+Examples:
+```
+/api/public/blog?resource=posts&limit=5
+/api/public/blog?resource=post&slug=my-blog-post
+/api/public/blog?resource=categories
+/api/public/blog?resource=tags
+/api/public/blog?resource=featured&limit=3
+/api/public/blog?resource=posts&categoryId=123e4567-e89b-12d3-a456-426614174000
+```
+
+### Subscribe to Updates
+```http
+POST /api/public/blog
+```
+
+Headers:
+```
+x-api-key: <your_api_key>
+Content-Type: application/json
+```
+
+Body:
+```json
+{
+  "action": "subscribe",
+  "callbackUrl": "https://your-site.com/webhook/blog-updates"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Subscription successful",
+  "subscriptionId": "sub_1234567890",
+  "timestamp": "2024-08-04T12:34:56.789Z"
+}
+```
+
 ## GraphQL Integration ✅
-The API includes GraphQL support for more flexible querying:
+For more flexible data querying, the system also includes a GraphQL API:
 ```
 GraphQL Endpoint: /api/graphql
 ```
 
+The GraphQL API provides a more powerful way to fetch exactly the data you need with a single request. It supports all the operations available through the REST API plus additional features.
+
 Example GraphQL query:
 ```graphql
-query GetBlogPosts($limit: Int, $offset: Int, $where: blog_posts_bool_exp, $order_by: [blog_posts_order_by!]) {
-  blog_posts(limit: $limit, offset: $offset, where: $where, order_by: $order_by) {
-    id
-    title
-    slug
-    excerpt
-    featured_image
-    created_at
-    updated_at
-    author_id
-  }
-  blog_posts_aggregate {
-    aggregate {
-      count
+query GetBlogPosts($limit: Int, $categoryId: ID) {
+  posts(limit: $limit, categoryId: $categoryId) {
+    edges {
+      node {
+        id
+        title
+        slug
+        excerpt
+        featuredImage
+        author {
+          name
+        }
+        category {
+          name
+          slug
+        }
+        tags {
+          name
+          slug
+        }
+        publishedAt
+      }
     }
+    totalCount
   }
 }
 ```
 
-## Database Schema
+### Real-time Subscriptions in GraphQL ✅
+The system supports GraphQL subscriptions for real-time data updates via Apollo Client:
 
-### Tables Structure
-1. **blog_posts** ✅
-   - Primary blog content storage
-   - Supports multilingual content (RTL/LTR)
-   - Includes SEO metadata
-   - Tracks view counts and engagement
-
-2. **blog_categories** 🟡
-   - Hierarchical content organization
-   - Supports multilingual categories
-
-3. **blog_tags** 🟡
-   - Content classification and search optimization
-   - Many-to-many relationship with posts
-
-4. **blog_media** ✅
-   - Media asset management
-   - Supports images, videos, and documents
-   - Includes metadata and alt text
-
-5. **blog_comments** 📅
-   - User engagement tracking
-   - Moderation support with approval workflow
-   - Threaded discussions
-
-6. **users** ✅
-   - Author and administrator management
-   - Role-based access control
-
-## API Endpoints
-
-### Posts
-
-#### List Posts ✅
-```http
-GET /api/posts
-```
-
-Query Parameters:
-- `page` (integer): Page number for pagination
-- `limit` (integer): Items per page (default: 10)
-- `status` (string): Filter by status ('draft', 'published')
-- `category` (uuid): Filter by category ID
-- `tag` (uuid): Filter by tag ID
-- `author` (uuid): Filter by author ID
-- `direction` (string): Filter by content direction ('ltr', 'rtl')
-- `featured` (boolean): Filter featured posts
-- `search` (string): Search in title and content 🔄
-
-Response:
-```json
-{
-  "data": [{
-    "id": "uuid",
-    "title": "string",
-    "slug": "string",
-    "excerpt": "string?",
-    "content": "string?",
-    "featured_image": "string?",
-    "author": {
-      "id": "uuid",
-      "name": "string"
-    },
-    "category": {
-      "id": "uuid",
-      "name": "string"
-    },
-    "tags": [{
-      "id": "uuid",
-      "name": "string"
-    }],
-    "status": "string",
-    "is_featured": boolean,
-    "view_count": number,
-    "published_at": "datetime?",
-    "created_at": "datetime",
-    "updated_at": "datetime",
-    "seo_title": "string?",
-    "seo_description": "string?",
-    "seo_keywords": "string?",
-    "direction": "string"
-  }],
-  "metadata": {
-    "total": number,
-    "page": number,
-    "limit": number,
-    "total_pages": number
-  }
-}
-```
-
-#### Get Single Post ✅
-```http
-GET /api/posts/{slug}
-```
-
-Response: Single post object with full details
-
-#### Create Post ✅
-```http
-POST /api/posts
-```
-
-Request Body:
-```json
-{
-  "title": "string",
-  "content": "string",
-  "excerpt": "string?",
-  "featured_image": "string?",
-  "category_id": "uuid?",
-  "tag_ids": "uuid[]?",
-  "status": "draft|published",
-  "is_featured": "boolean?",
-  "published_at": "datetime?",
-  "seo_title": "string?",
-  "seo_description": "string?",
-  "seo_keywords": "string?",
-  "direction": "ltr|rtl"
-}
-```
-
-#### Update Post ✅
-```http
-PUT /api/posts/{id}
-```
-
-Request Body: Same as Create Post
-
-#### Delete Post ✅
-```http
-DELETE /api/posts/{id}
-```
-
-### Categories
-
-#### List Categories 🟡
-```http
-GET /api/categories
-```
-
-GraphQL equivalent (✅ Implemented):
 ```graphql
-query GET_CATEGORIES {
-  blog_categories {
-    id
-    name
-    slug
-    description
-  }
-}
-```
-
-#### Get Posts by Category 🟡
-```http
-GET /api/categories/{slug}/posts
-```
-
-GraphQL equivalent (✅ Implemented):
-```graphql
-query GET_POSTS_BY_CATEGORY($categoryId: uuid!, $limit: Int, $offset: Int) {
-  blog_posts(where: {category_id: {_eq: $categoryId}}, limit: $limit, offset: $offset) {
-    id
-    title
-    slug
-    excerpt
-    # other fields
-  }
-}
-```
-
-#### Create Category 🟡
-```http
-POST /api/categories
-```
-
-Request Body:
-```json
-{
-  "name": "string",
-  "slug": "string",
-  "description": "string?",
-  "parent_id": "uuid?",
-  "direction": "ltr|rtl"
-}
-```
-
-### Tags
-
-#### List Tags 🟡
-```http
-GET /api/tags
-```
-
-GraphQL equivalent (✅ Implemented):
-```graphql
-query GET_TAGS {
-  blog_tags {
-    id
-    name
-    slug
-  }
-}
-```
-
-#### Create Tag 🟡
-```http
-POST /api/tags
-```
-
-Request Body:
-```json
-{
-  "name": "string",
-  "slug": "string"
-}
-```
-
-### Media
-
-#### Upload Media ✅
-```http
-POST /api/blog/media
-```
-Content-Type: multipart/form-data
-
-Form Fields:
-- `file`: Media file
-- `alt_text`: Alternative text
-- `caption`: Media caption
-
-Response:
-```json
-{
-  "media": {
-    "id": "uuid",
-    "fileName": "string",
-    "fileUrl": "string",
-    "fileType": "string",
-    "fileSize": number,
-    "createdAt": "datetime",
-    "updatedAt": "datetime"
-  }
-}
-```
-
-#### List Media ✅
-```http
-GET /api/blog/media
-```
-
-Query Parameters:
-- `type`: Filter by media type
-- `limit`: Items per page
-- `offset`: Pagination offset
-
-### Comments
-
-#### List Comments 📅
-```http
-GET /api/posts/{post_id}/comments
-```
-
-#### Add Comment 📅
-```http
-POST /api/posts/{post_id}/comments
-```
-
-Request Body:
-```json
-{
-  "content": "string",
-  "parent_id": "uuid?",
-  "author_name": "string?",
-  "author_email": "string?"
-}
-```
-
-## Comment System with Approval Workflow 📅
-
-The comment system includes a moderation workflow to ensure content quality and prevent spam.
-
-### Comment States
-- **Pending**: Initial state for all new comments
-- **Approved**: Comments that have been reviewed and approved
-- **Rejected**: Comments that have been reviewed and rejected
-- **Spam**: Comments automatically flagged as spam
-
-### Comment Approval Cycle
-1. User submits a comment
-2. Comment is saved with "pending" status
-3. Notification is sent to moderators
-4. Moderator reviews and takes action:
-   - Approve → Comment becomes visible
-   - Reject → Comment remains hidden
-   - Mark as spam → Comment is flagged for analysis
-
-### Moderator Endpoints 📅
-
-#### List Pending Comments
-```http
-GET /api/moderation/comments?status=pending
-```
-
-#### Approve Comment
-```http
-POST /api/moderation/comments/{id}/approve
-```
-
-#### Reject Comment
-```http
-POST /api/moderation/comments/{id}/reject
-```
-
-#### Mark Comment as Spam
-```http
-POST /api/moderation/comments/{id}/spam
-```
-
-### Comment Notification System 📅
-- Email notifications for moderators when new comments are submitted
-- Webhook notifications for approved comments
-- Batch moderation capabilities for high-volume sites
-
-## SEO and Social Media Optimization 🟡
-
-### SEO Features
-
-#### Meta Tags ✅
-The API provides endpoints to manage SEO metadata for blog posts:
-
-```http
-POST/PUT /api/posts
-```
-
-SEO-specific fields:
-```json
-{
-  "seo_title": "string",
-  "seo_description": "string",
-  "seo_keywords": "string",
-  "canonical_url": "string?"
-}
-```
-
-#### Structured Data (Schema.org) 🔄
-Implemented for:
-- BlogPosting
-- Article
-- Person (author)
-
-Example structured data returned by API:
-```json
-{
-  "structured_data": {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": "Post Title",
-    "author": {
-      "@type": "Person",
-      "name": "Author Name"
-    },
-    "datePublished": "2025-01-01T00:00:00Z",
-    "dateModified": "2025-01-02T00:00:00Z",
-    "image": "https://example.com/image.jpg",
-    "publisher": {
-      "@type": "Organization",
-      "name": "OSINT Dashboard",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://example.com/logo.jpg"
+subscription SubscribeToPosts {
+  posts(limit: 10) {
+    edges {
+      node {
+        id
+        title
+        slug
+        excerpt
+        publishedAt
       }
     }
   }
 }
 ```
 
-#### SEO Optimization Endpoints 📅
-```http
-GET /api/seo/analysis/{post_id}
-```
+## Response Format
 
-Response:
+### Success Response
 ```json
 {
-  "score": 85,
-  "recommendations": [
-    "Add more headings to improve structure",
-    "Increase keyword density in the first paragraph"
+  "posts": [
+    {
+      "id": "uuid",
+      "title": "Post Title",
+      "slug": "post-title",
+      "excerpt": "Post excerpt...",
+      "content": "Full post content...",
+      "featuredImage": "https://...",
+      "author": {
+        "id": "uuid",
+        "name": "Author Name"
+      },
+      "category": {
+        "id": "uuid",
+        "name": "Category Name",
+        "slug": "category-slug"
+      },
+      "tags": [
+        {
+          "id": "uuid",
+          "name": "Tag Name",
+          "slug": "tag-slug"
+        }
+      ],
+      "status": "published",
+      "isFeatured": true,
+      "viewCount": 123,
+      "publishedAt": "2024-01-01T00:00:00Z",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z",
+      "seoTitle": "SEO Title",
+      "seoDescription": "SEO Description",
+      "seoKeywords": "keywords,separated,by,commas",
+      "direction": "ltr"
+    }
   ],
-  "keyword_analysis": {
-    "primary_keyword": {
-      "term": "string",
-      "count": number,
-      "density": number
-    },
-    "secondary_keywords": []
-  }
+  "page": 1,
+  "limit": 10,
+  "total": 100,
+  "totalPages": 10
 }
 ```
 
-### Social Media Optimization 🟡
-
-#### Open Graph Tags ✅
-The API automatically generates Open Graph metadata for shared content:
-
+### Error Response
 ```json
 {
-  "og_metadata": {
-    "og:title": "string",
-    "og:description": "string",
-    "og:image": "string",
-    "og:url": "string",
-    "og:type": "article"
-  }
+  "error": "Error message",
+  "message": "Detailed error description"
 }
 ```
 
-#### Twitter Card Tags ✅
-Twitter-specific card metadata:
+## Performance Optimizations ✅
 
-```json
-{
-  "twitter_metadata": {
-    "twitter:card": "summary_large_image",
-    "twitter:site": "@osint_dashboard",
-    "twitter:title": "string",
-    "twitter:description": "string",
-    "twitter:image": "string"
-  }
-}
-```
+The API includes several performance optimizations:
 
-#### Social Media Preview API 📅
-```http
-GET /api/social/preview/{post_id}?platform=facebook|twitter|linkedin
-```
+1. **Efficient Database Queries**:
+   - Batch requests to minimize database calls
+   - Optimized JOINs and relationship handling
+   - Selective column fetching
 
-Returns social media preview data for specified platform.
+2. **Caching**:
+   - Response caching with appropriate cache headers
+   - Cache invalidation on content updates
+   - Ability to force cache refresh with the `cacheBuster` parameter
 
-## Search Implementation 🔄
+3. **Data Loading Optimizations**:
+   - N+1 query problem solved with bulk data loading
+   - Parallel async data fetching where appropriate
+   - Deferred relationship loading when needed
 
-The search functionality is provided through multiple approaches:
+4. **Network Efficiency**:
+   - Compressed responses
+   - Pagination to limit payload size
+   - Only necessary fields returned in responses
 
-### Full-Text Search (GraphQL) 🔄
-```graphql
-query SEARCH_POSTS($searchTerm: String!, $limit: Int) {
-  blog_posts(
-    where: {_or: [
-      {title: {_ilike: $searchTerm}}, 
-      {content: {_ilike: $searchTerm}}
-    ]}, 
-    limit: $limit
-  ) {
-    id
-    title
-    slug
-    excerpt
-  }
-}
-```
+## Code Architecture
 
-### API Endpoint Search 🔄
-```http
-GET /api/search?q=search_term
-```
+The implemented solution follows these best practices:
 
-Search capabilities:
-- Title and content search
-- Category and tag filtering
-- Author search
-- Date range filtering
+1. **Clean Code Architecture**:
+   - Single responsibility principle
+   - DRY (Don't Repeat Yourself)
+   - Modular design with helper functions
 
-## Error Handling ✅
+2. **Type Safety**:
+   - TypeScript throughout
+   - Proper interface definitions
+   - Runtime type validation
 
-All endpoints return standard HTTP status codes:
-- 200: Success
-- 201: Created
-- 400: Bad Request
-- 401: Unauthorized
-- 403: Forbidden
-- 404: Not Found
-- 500: Server Error
+3. **Error Handling**:
+   - Comprehensive try/catch blocks
+   - Detailed error messages
+   - Graceful fallbacks
 
-Error Response Format:
-```json
-{
-  "error": {
-    "code": "string",
-    "message": "string",
-    "details": {}
-  }
-}
-```
-
-## Rate Limiting 🟡
-- 1000 requests per hour per IP
-- 100 requests per minute per IP for media uploads
-
-## Caching 🟡
-- GET requests are cached for 5 minutes
-- Cache can be bypassed with `Cache-Control: no-cache` header
-
-## Security Considerations ✅
-1. All endpoints require authentication except:
-   - GET /api/posts (published only)
-   - GET /api/posts/{slug} (published only)
-   - GET /api/categories
-   - GET /api/tags
-
-2. Role-Based Access:
-   - ADMIN: Full access
-   - EDITOR: Can manage posts, categories, tags
-   - AUTHOR: Can manage own posts
-   - CONTRIBUTOR: Can create draft posts
-
-3. Content Security:
-   - Media files are scanned for malware
-   - File size limits: 10MB for images, 50MB for videos
-   - Supported image formats: JPG, PNG, WebP, GIF
-   - Supported video formats: MP4, WebM
-   - Supported document formats: PDF, DOCX
+4. **Security**:
+   - Input validation
+   - Authentication for protected endpoints
+   - Rate limiting
+   - No direct database access from the headless site
 
 ## Example Usage
 
-### JavaScript/TypeScript (with GraphQL) ✅
-```typescript
-// Using Apollo Client
-import { gql, useQuery } from '@apollo/client';
+### JavaScript Fetch API
+```javascript
+// Fetch latest posts
+async function fetchLatestPosts() {
+  const response = await fetch('https://api.example.com/api/public/blog?resource=posts&limit=5');
+  const data = await response.json();
+  return data.posts;
+}
 
-const GET_BLOG_POSTS = gql`
-  query GetBlogPosts($limit: Int, $offset: Int) {
-    blog_posts(limit: $limit, offset: $offset, order_by: {created_at: desc_nulls_last}) {
-      id
-      title
-      slug
-      excerpt
-    }
-    blog_posts_aggregate {
-      aggregate {
-        count
-      }
-    }
-  }
-`;
+// Fetch a single post
+async function fetchPost(slug) {
+  const response = await fetch(`https://api.example.com/api/public/blog?resource=post&slug=${slug}`);
+  return await response.json();
+}
+
+// Fetch categories with post counts
+async function fetchCategories() {
+  const response = await fetch('https://api.example.com/api/public/blog?resource=categories');
+  return await response.json();
+}
+```
+
+### React Component Example
+```jsx
+import { useState, useEffect } from 'react';
 
 function BlogList() {
-  const { loading, error, data } = useQuery(GET_BLOG_POSTS, {
-    variables: { limit: 10, offset: 0 }
-  });
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
-
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/public/blog?resource=posts&limit=10');
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        setPosts(data.posts || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (posts.length === 0) return <div>No posts found</div>;
+  
   return (
     <div>
-      <h1>Blog Posts</h1>
-      <ul>
-        {data.blog_posts.map(post => (
-          <li key={post.id}>{post.title}</li>
+      <h1>Latest Blog Posts</h1>
+      <div className="posts-grid">
+        {posts.map(post => (
+          <div key={post.id} className="post-card">
+            {post.featuredImage && (
+              <img src={post.featuredImage} alt={post.title} />
+            )}
+            <h2>{post.title}</h2>
+            <p>{post.excerpt}</p>
+            <a href={`/blog/${post.slug}`}>Read more</a>
+          </div>
         ))}
-      </ul>
-      <p>Total posts: {data.blog_posts_aggregate.aggregate.count}</p>
+      </div>
     </div>
   );
 }
 ```
 
-### REST API Example ✅
-```typescript
-const fetchPosts = async () => {
-  const response = await fetch('https://your-api.com/api/posts', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  return response.json();
-};
-
-const createPost = async (postData) => {
-  const response = await fetch('https://your-api.com/api/posts', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(postData)
-  });
-  return response.json();
-};
-```
-
-### cURL
-```bash
-# List posts
-curl -X GET "https://your-api.com/api/posts" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# Create post
-curl -X POST "https://your-api.com/api/posts" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"New Post","content":"Content here"}'
-```
-
-## Webhooks 📅
-The API supports webhooks for the following events:
-- Post published
-- Comment added
-- Media uploaded
-
-Webhook payload format:
-```json
-{
-  "event": "string",
-  "timestamp": "datetime",
-  "data": {}
+### Real-time Updates with WebSockets
+```javascript
+// Subscribe to real-time updates
+function subscribeToUpdates(callback) {
+  const socket = new WebSocket('wss://api.example.com/ws');
+  
+  socket.onopen = () => {
+    console.log('Connected to WebSocket server');
+    socket.send(JSON.stringify({
+      type: 'subscribe',
+      resource: 'blog_posts'
+    }));
+  };
+  
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    callback(data);
+  };
+  
+  socket.onerror = (error) => {
+    console.error('WebSocket error:', error);
+  };
+  
+  socket.onclose = () => {
+    console.log('WebSocket connection closed');
+    // Attempt to reconnect after a delay
+    setTimeout(() => subscribeToUpdates(callback), 5000);
+  };
+  
+  return {
+    unsubscribe: () => socket.close()
+  };
 }
+
+// Usage
+const subscription = subscribeToUpdates((data) => {
+  console.log('Real-time update received:', data);
+  // Update UI or trigger a refresh
+});
+
+// Cleanup when component unmounts
+subscription.unsubscribe();
 ```
 
-## Migration and Backup 🔄
-- Daily automated backups
-- Backup retention: 30 days
-- Migration endpoints for WordPress import/export
+## Webhook Integration
 
-## Support and Contact
-For API support and questions:
-- Email: api-support@yourdomain.com
-- Documentation Updates: Check GitHub repository
-- Status Page: status.yourdomain.com 
+Headless sites can receive real-time updates when content changes by subscribing to webhooks. Here's how to implement a webhook receiver:
 
-## Implementation Roadmap
+```javascript
+// Express.js webhook receiver
+const express = require('express');
+const app = express();
+app.use(express.json());
 
-### Q2 2025
-- Complete comment system with approval workflow
-- Enhanced search functionality with filters
-- Webhook integration for content changes
-- Social media preview API with validation tools
-
-### Q3 2025
-- Analytics integration for content performance
-- Social media sharing enhancements
-- Email newsletter integration
-- Advanced SEO analysis tools
-
-### Q4 2025
-- AI-assisted content recommendations
-- Enhanced media management with image editing
-- Advanced comment moderation with AI spam detection
-- Automated social media posting integration
-
-## Best Practices Checklist
-
-### SEO Best Practices
-- [ ] **Content Optimization** ✅
-  - [x] Each post targets a single, specific keyword/topic
-  - [x] Content structured with proper HTML headings
-  - [x] Descriptive alt text for all images
-  - [x] Internal linking between related posts
-  - [ ] Keyword density analysis tools
+app.post('/webhook/blog-updates', (req, res) => {
+  const { event, resource, resourceId, timestamp } = req.body;
   
-- [ ] **Technical SEO** 🟡
-  - [x] Proper schema.org structured data implementation
-  - [x] SEO-friendly URL slugs
-  - [x] Mobile-responsive content
-  - [ ] XML sitemap generation
-  - [ ] Canonical URL support
+  console.log(`Event received: ${event} for ${resource} ${resourceId}`);
   
-- [ ] **Performance** 🟡
-  - [x] Image optimization
-  - [x] Content caching
-  - [ ] Core Web Vitals monitoring
+  // Validate webhook signature
+  const signature = req.headers['x-webhook-signature'];
+  if (!verifySignature(signature, req.body)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  // Handle different event types
+  switch (event) {
+    case 'post.published':
+    case 'post.updated':
+      // Clear cache or update in-memory store
+      clearCacheForPost(resourceId);
+      break;
+    case 'post.deleted':
+      // Remove from cache or store
+      removeDeletedPost(resourceId);
+      break;
+    // Handle other event types...
+  }
+  
+  res.status(200).json({ received: true });
+});
 
-### Social Media Optimization Best Practices
-- [ ] **Open Graph Tags** ✅
-  - [x] og:title (up to 95 characters, no brand name)
-  - [x] og:description (compelling summary)
-  - [x] og:image (high-quality featured image)
-  - [x] og:url (canonical URL)
-  - [x] og:type (set to "article" for blog posts)
-  
-- [ ] **Twitter Card Tags** ✅
-  - [x] twitter:card (using summary_large_image for posts)
-  - [x] twitter:site (organization Twitter handle)
-  - [x] twitter:title (can include brand name)
-  - [x] twitter:description (same as og:description)
-  - [x] twitter:image (properly sized image)
-  
-- [ ] **Social Preview Tools** 📅
-  - [ ] Preview generator for all major platforms
-  - [ ] Social card validation tools
-  - [ ] A/B testing for social media headlines
+app.listen(3000, () => {
+  console.log('Webhook receiver listening on port 3000');
+});
+```
 
-### Content Management Best Practices
-- [ ] **Multilingual Support** 🟡
-  - [x] RTL/LTR content direction
-  - [x] Language-specific metadata
-  - [ ] Hreflang tag support
-  - [ ] Translation management workflow
-  
-- [ ] **Media Management** ✅
-  - [x] Proper alt text storage
-  - [x] Media organization by type
-  - [x] Image sizing for different placements
-  - [x] Media security scanning
+## Caching Strategies
 
-- [ ] **Publishing Workflow** 🟡
-  - [x] Draft/published states
-  - [x] Scheduled publishing
-  - [ ] Editorial calendar
-  - [ ] Content approval process
-  - [ ] Content version history
+The API implements several caching strategies:
+
+1. **HTTP Caching**:
+   - `Cache-Control` headers with appropriate max-age
+   - ETag support for conditional requests
+   - Cache-busting with the `cacheBuster` parameter
+
+2. **Content Delivery Network (CDN)**:
+   - Configure your CDN to respect the cache headers
+   - Purge CDN cache on webhook events
+
+3. **Client-side Caching**:
+   - Implement local storage caching in the headless site
+   - Invalidate cache on webhook notifications
+
+## Error Handling
+
+All endpoints return standard HTTP status codes:
+- 200: Success
+- 400: Bad Request (invalid parameters)
+- 401: Unauthorized
+- 404: Not Found
+- 429: Too Many Requests (rate limiting)
+- 500: Server Error
+
+## Security Considerations ✅
+
+1. **Authentication and Authorization**:
+   - Public endpoints provide read-only access to published content
+   - Management endpoints require authentication
+   - Role-based access control for internal dashboards
+
+2. **Input Validation**:
+   - All parameters are validated before use
+   - Proper escaping of user-provided search terms
+
+3. **Rate Limiting**:
+   - API endpoints are rate-limited to prevent abuse
+   - Graduated rate limits based on client needs
+
+4. **Security Headers**:
+   - CORS headers to control access
+   - Content-Security-Policy
+   - X-Content-Type-Options
 
 ## Document Purpose & Reference Usage
 
@@ -785,6 +499,5 @@ The API documentation should be consulted when:
 - Planning content migration from other systems
 - Understanding security requirements for API access
 - Determining appropriate rate limits and caching strategies
-- Implementing SEO and social media optimization features
 
-This reference is particularly valuable for development teams working on the public-facing components of the OSINT Dashboard project, as it provides a complete specification of available endpoints, request/response formats, authentication requirements, and security considerations. It complements the Project Architecture document by providing detailed API-specific information that's essential for proper integration and usage of the headless blog system. 
+This reference is particularly valuable for development teams working on the public-facing components of the OSINT Dashboard project, as it provides a complete specification of available endpoints, request/response formats, authentication requirements, and security considerations. It complements the Project Architecture document by providing detailed API-specific information that's essential for proper integration and usage of the headless blog system.

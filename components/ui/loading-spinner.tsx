@@ -3,14 +3,24 @@ import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 
 interface LoadingSpinnerProps {
-  size?: number
-  className?: string
+  size?: "sm" | "md" | "lg"
+  text?: string
 }
 
-export function LoadingSpinner({ size = 24, className }: LoadingSpinnerProps) {
+export default function LoadingSpinner({ 
+  size = "md", 
+  text = "Loading..." 
+}: LoadingSpinnerProps) {
+  const sizeMap = {
+    sm: "h-4 w-4",
+    md: "h-8 w-8",
+    lg: "h-12 w-12"
+  }
+
   return (
-    <div className={cn("flex items-center justify-center", className)}>
-      <Loader2 className="animate-spin" size={size} />
+    <div className="flex flex-col items-center justify-center p-8 text-center">
+      <Loader2 className={`${sizeMap[size]} animate-spin text-primary`} />
+      {text && <p className="mt-2 text-sm text-muted-foreground">{text}</p>}
     </div>
   )
 } 

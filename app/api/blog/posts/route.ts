@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/options';
 import slugify from 'slugify';
+import { webhooks } from '@/lib/utils/webhook';
 
 /**
  * GET /api/blog/posts
@@ -35,6 +36,9 @@ export async function GET(request: NextRequest) {
     // Apply filters
     if (status) {
       query = query.eq('status', status);
+    } else {
+      // Default to showing only published posts for public-facing pages
+      query = query.eq('status', 'published');
     }
     
     if (categoryId) {
@@ -242,6 +246,14 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Trigger webhook for post creation
+    if (status === 'published') {
+      webhooks.post.published(post.id, { 
+        title: post.title,
+        slug: post.slug 
+      });
+    }
+    
     return NextResponse.json({
       message: 'Blog post created successfully',
       post,
@@ -313,6 +325,23 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       console.error('Error updating blog posts:', error);
       return NextResponse.json({ error: 'Failed to update blog posts' }, { status: 500 });
+    }
+    
+    // Fetch updated posts for webhook notifications
+    const { data: updatedPosts } = await supabase
+      .from('blog_posts')
+      .select('id, title, slug, status')
+      .in('id', postIds);
+    
+    // Trigger webhooks for each updated post
+    if (updatedPosts && updates.status) {
+      updatedPosts.forEach(post => {
+        if (updates.status === 'published') {
+          webhooks.post.published(post.id, { title: post.title, slug: post.slug });
+        } else {
+          webhooks.post.updated(post.id, { title: post.title, slug: post.slug, status: updates.status });
+        }
+      });
     }
     
     return NextResponse.json({

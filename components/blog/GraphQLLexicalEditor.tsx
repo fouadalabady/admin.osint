@@ -7,7 +7,7 @@ import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ImageNode } from './plugins/nodes/ImageNode'
 import { ToolbarPlugin } from './plugins/ToolbarPlugin'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import LoadingSpinner from '@/components/ui/loading-spinner'
 import * as React from 'react'
 
 function LexicalErrorBoundary({ children }: { children: React.ReactNode }) {

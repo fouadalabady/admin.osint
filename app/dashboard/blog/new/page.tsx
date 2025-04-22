@@ -16,7 +16,7 @@ import LexicalEditor from "@/components/blog/LexicalEditor"
 import SeoAnalyzer from "@/components/blog/SeoAnalyzer"
 import { useToast } from "@/hooks/use-toast"
 import { Category, Tag } from "@/types/blog"
-import { useCreateBlogPost, createBlogPostMutation } from "@/lib/graphql/hooks/useBlogPost"
+import { useCreateBlogPost, createBlogPostMutation, BlogPostInputForResolver } from "@/lib/graphql/hooks/useBlogPost"
 import slugify from "slugify"
 import { useSession } from "next-auth/react"
 
@@ -38,6 +38,7 @@ interface FormData {
     ogImage: string
   }
   direction: 'ltr' | 'rtl'
+  isFeatured: boolean
 }
 
 const NewBlogPost = () => {
@@ -56,6 +57,7 @@ const NewBlogPost = () => {
     tags: [],
     status: "draft",
     direction: "ltr",
+    isFeatured: false,
     seo: {
       title: "",
       description: "",
@@ -188,21 +190,22 @@ const NewBlogPost = () => {
     }))
   }
   
+  const handleSwitchChange = (checked: boolean, field: string) => {
+    setFormData(prev => ({ ...prev, [field]: checked }))
+  }
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     
     try {
-      // Use GraphQL mutation instead of REST API
       const authorId = session?.user?.id || '';
-      
       if (!authorId) {
         throw new Error('User not authenticated');
       }
       
       const result = await createBlogPostMutation(createPost, {
         title: formData.title,
-        slug: formData.slug || slugify(formData.title, { lower: true, strict: true }),
         content: formData.content,
         excerpt: formData.excerpt || undefined,
         featured_image: formData.featuredImage || undefined,
@@ -211,9 +214,9 @@ const NewBlogPost = () => {
         seo_keywords: formData.seo.keywords || undefined,
         status: formData.status,
         direction: formData.direction,
-        author_id: authorId,
         category_id: formData.category || undefined,
-        is_featured: false,
+        tag_ids: formData.tags.length > 0 ? formData.tags : undefined,
+        is_featured: formData.isFeatured,
         published_at: formData.status === 'published' ? new Date().toISOString() : undefined
       });
       
@@ -545,6 +548,15 @@ const NewBlogPost = () => {
                   <p className="text-sm text-muted-foreground mt-1">
                     This setting affects how text is displayed in your post
                   </p>
+                </div>
+                
+                <div className="flex items-center space-x-2 pt-2">
+                  <Switch 
+                    id="isFeatured"
+                    checked={formData.isFeatured}
+                    onCheckedChange={(checked) => handleSwitchChange(checked, 'isFeatured')}
+                  />
+                  <Label htmlFor="isFeatured">Featured Post</Label>
                 </div>
               </CardContent>
             </Card>

@@ -19,8 +19,8 @@ export default function BlogPreviewPage() {
   const { data, loading, error } = useGetBlogPostBySlug(slug)
 
   useEffect(() => {
-    if (data?.blog_postsCollection?.edges?.length > 0) {
-      setPost(data.blog_postsCollection.edges[0].node)
+    if (data?.post) {
+      setPost(data.post)
       setIsLoading(false)
     } else if (!loading && !error) {
       setIsLoading(false)
@@ -59,8 +59,8 @@ export default function BlogPreviewPage() {
                 <p className="text-xl text-muted-foreground mb-4">{post.excerpt}</p>
               )}
               <div className="flex items-center text-sm text-muted-foreground">
-                <time dateTime={post.published_at || post.created_at}>
-                  {formatDate(post.published_at || post.created_at)}
+                <time dateTime={post.publishedAt || post.createdAt}>
+                  {formatDate(post.publishedAt || post.createdAt)}
                 </time>
                 <span className="mx-1">•</span>
                 <span>
@@ -69,10 +69,10 @@ export default function BlogPreviewPage() {
               </div>
             </header>
             
-            {post.featured_image && (
+            {post.featuredImage && (
               <div className="mb-8">
                 <img 
-                  src={post.featured_image} 
+                  src={post.featuredImage} 
                   alt={post.title} 
                   className="w-full h-auto rounded-lg object-cover aspect-video"
                 />
@@ -82,7 +82,7 @@ export default function BlogPreviewPage() {
             <div className="mt-8">
               <LexicalContentRenderer 
                 content={post.content} 
-                direction={post.direction as 'ltr' | 'rtl'} 
+                direction={post.direction} 
                 className="prose-container"
               />
             </div>

@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 import { useGetBlogPostBySlug, useUpdateBlogPost, updateBlogPostMutation } from '@/lib/graphql/hooks/useBlogPost'
 import { BlogPost } from '@/types/blog'
+import { Switch } from "@/components/ui/switch"
 
 export default function DashboardEditBlogPost() {
   const params = useParams()
@@ -28,11 +29,13 @@ export default function DashboardEditBlogPost() {
   const [updatePost] = useUpdateBlogPost();
   
   useEffect(() => {
-    if (data?.blog_postsCollection?.edges?.length > 0) {
-      setPost(data.blog_postsCollection.edges[0].node);
+    if (data?.post) {
+      setPost(data.post);
+      setIsLoading(false);
+    } else if (!loading) {
       setIsLoading(false);
     }
-  }, [data, slug]);
+  }, [data, loading, slug]);
 
   const handleContentChange = (content: string) => {
     if (post) {
@@ -49,19 +52,20 @@ export default function DashboardEditBlogPost() {
     try {
       setSaving(true);
       
+      // Map the post fields to match the resolver's expected format
       const result = await updateBlogPostMutation(updatePost, post.id, {
         title: post.title,
-        slug: post.slug,
         content: post.content,
         excerpt: post.excerpt,
-        seo_description: post.seo_description,
-        seo_title: post.seo_title,
-        seo_keywords: post.seo_keywords,
-        status: post.status as 'draft' | 'published' | 'archived',
-        direction: post.direction as 'ltr' | 'rtl',
-        is_featured: post.is_featured,
-        category_id: post.category_id,
-        author_id: post.author_id,
+        featured_image: post.featuredImage,
+        seo_title: post.seoTitle,
+        seo_description: post.seoDescription,
+        seo_keywords: post.seoKeywords,
+        status: post.status,
+        direction: post.direction,
+        is_featured: post.isFeatured,
+        category_id: post.category?.id,
+        tag_ids: post.tags?.map(tag => tag.id),
       });
       
       if (result.error) {
@@ -167,9 +171,17 @@ export default function DashboardEditBlogPost() {
               <Label htmlFor="seo_description">SEO Description</Label>
               <Textarea
                 id="seo_description"
-                value={post.seo_description || ''}
-                onChange={(e) => setPost({ ...post, seo_description: e.target.value })}
+                value={post.seoDescription || ''}
+                onChange={(e) => setPost({ ...post, seoDescription: e.target.value })}
               />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch 
+                id="isFeatured"
+                checked={post.isFeatured}
+                onCheckedChange={(checked) => setPost({ ...post, isFeatured: checked })}
+              />
+              <Label htmlFor="isFeatured">Featured Post</Label>
             </div>
           </CardContent>
         </Card>

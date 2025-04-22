@@ -210,88 +210,74 @@ export default function TagsPage() {
   }
   
   return (
-    <div className="container py-6">
-      <div className="mb-6 flex flex-col sm:flex-row justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Tags</h1>
-          <p className="text-muted-foreground">
-            Manage tags for categorizing blog posts
-          </p>
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex-1 flex items-center gap-2 relative">
+          <Input
+            placeholder="Search tags..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         
-        <div className="flex mt-4 sm:mt-0">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="ml-2">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create Tag
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {isEditing ? "Edit Tag" : "Create Tag"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      placeholder="Enter tag name"
-                      value={newTag.name}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      resetForm()
-                      setIsDialogOpen(false)
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {isEditing ? "Updating..." : "Creating..."}
-                      </>
-                    ) : (
-                      <>{isEditing ? "Update" : "Create"}</>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-      
-      <div className="mb-6">
-        <Input
-          placeholder="Search tags..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Tag
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {isEditing ? "Edit Tag" : "Create Tag"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Tag name"
+                  value={newTag.name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : isEditing ? "Update" : "Create"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {filteredTags.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <TagIcon className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-1">No tags found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchQuery ? "No tags match your search" : "Create your first tag to get started"}
+        <div className="text-center py-12 border rounded-lg bg-muted/20">
+          <h3 className="text-lg font-medium">No tags found</h3>
+          <p className="text-muted-foreground mt-1">
+            {tags.length === 0
+              ? "Create your first tag to categorize your blog posts."
+              : "Try adjusting your search to find what you're looking for."}
           </p>
-          {!searchQuery && (
-            <Button onClick={() => setIsDialogOpen(true)}>
+          
+          {tags.length === 0 && (
+            <Button
+              className="mt-4"
+              onClick={() => setIsDialogOpen(true)}
+            >
               <PlusCircle className="mr-2 h-4 w-4" />
               Create Tag
             </Button>
@@ -304,46 +290,4 @@ export default function TagsPage() {
               <CardContent className="pt-6 pb-2 flex-1">
                 <div className="flex items-center">
                   <div 
-                    className={`inline-flex h-8 items-center rounded-md px-2.5 py-0.5 text-sm font-medium mr-2 ${getTagColors(index)}`}
-                  >
-                    <TagIcon className="h-3.5 w-3.5 mr-1" />
-                    {tag.name}
-                  </div>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  {tag.postCount || 0} posts
-                </div>
-              </CardContent>
-              
-              <CardFooter className="flex justify-between pt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEdit(tag)}
-                >
-                  <Edit className="h-4 w-4 mr-1" /> Edit
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDelete(tag.id)}
-                  disabled={deleteLoading}
-                >
-                  {deleteLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Trash className="h-4 w-4 mr-1" /> Delete
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+                    className={`inline-flex h-8 items-center rounded-md px-2.5 py-0.5 text-sm font-medium mr-2 ${getTagColors(index)}`

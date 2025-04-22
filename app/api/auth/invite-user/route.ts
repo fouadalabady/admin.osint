@@ -5,11 +5,32 @@ import { sendEmail } from '@/lib/email';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/options';
 import { UserRole } from '@/types/auth';
+import { headers } from 'next/headers';
 
 // Create a direct Supabase client using env variables for admin operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+// Helper function to get the current domain
+function getBaseUrl() {
+  // For production environment, use NEXTAUTH_URL
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.NEXTAUTH_URL || '';
+  }
+  
+  // For development, try to determine from request headers
+  const headersList = headers();
+  const host = headersList.get('host');
+  const protocol = headersList.get('x-forwarded-proto') || 'http';
+  
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+  
+  // Fallback to NEXTAUTH_URL
+  return process.env.NEXTAUTH_URL || '';
+}
 
 export async function POST(request: Request) {
   try {
@@ -21,11 +42,13 @@ export async function POST(request: Request) {
     }
     
     // Only admins and super admins can invite users
-    if (session.user.role !== 'admin' && session.user.role !== 'super_admin') {
+    const userRole = session.user.role as UserRole;
+    if (userRole !== 'admin' && userRole !== 'super_admin') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
     
     const { email, name, role = 'user' } = await request.json();
+    const requestedRole = role as UserRole;
     
     // Validate input
     if (!email || !name) {
@@ -33,7 +56,7 @@ export async function POST(request: Request) {
     }
     
     // Only super_admin can create admin users
-    if ((role === 'admin' || role === 'super_admin') && session.user.role !== 'super_admin') {
+    if ((requestedRole === 'admin' || requestedRole === 'super_admin') && userRole !== 'super_admin') {
       return NextResponse.json({ 
         error: 'Only super admins can invite admin users'
       }, { status: 403 });
@@ -66,7 +89,7 @@ export async function POST(request: Request) {
         email_confirm: true, // Auto-confirm the email
         user_metadata: {
           name,
-          role: role as UserRole,
+          role: requestedRole,
           status: 'active',
           invited_by: session.user.id,
           invited_at: new Date().toISOString(),
@@ -90,7 +113,7 @@ export async function POST(request: Request) {
         .from('users')
         .insert([{
           id: userId,
-          role: role as UserRole,
+          role: requestedRole,
           status: 'active',
           user_metadata: { 
             name,
@@ -114,7 +137,7 @@ export async function POST(request: Request) {
         {
           user_metadata: {
             name,
-            role: role as UserRole,
+            role: requestedRole,
             status: 'active',
             reinvited_by: session.user.id,
             reinvited_at: new Date().toISOString(),
@@ -133,7 +156,7 @@ export async function POST(request: Request) {
         .from('users')
         .upsert([{
           id: userId,
-          role: role as UserRole,
+          role: requestedRole,
           status: 'active',
           user_metadata: { 
             name,
@@ -148,12 +171,15 @@ export async function POST(request: Request) {
       }
     }
     
+    // Get the current base URL for the redirect
+    const baseUrl = getBaseUrl();
+    
     // Generate a magic link for the user to complete their profile
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: `${process.env.NEXTAUTH_URL}/auth/complete-profile?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`,
+        redirectTo: `${baseUrl}/auth/complete-profile?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`,
       }
     });
     

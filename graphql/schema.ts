@@ -17,6 +17,10 @@ export const typeDefs = gql`
     categories: [Category!]!
     tags: [Tag!]!
     media(type: MediaType, page: Int, limit: Int): MediaConnection!
+    
+    # New queries for editable and non-editable posts
+    editablePosts(page: Int, limit: Int): PostConnection!
+    nonEditablePosts(page: Int, limit: Int): PostConnection!
   }
 
   type Mutation {
@@ -45,7 +49,7 @@ export const typeDefs = gql`
     excerpt: String
     content: String
     featuredImage: String
-    author: User!
+    author: User
     category: Category
     tags: [Tag!]!
     status: PostStatus!
@@ -140,31 +144,31 @@ export const typeDefs = gql`
     title: String!
     content: String!
     excerpt: String
-    featuredImage: String
-    categoryId: ID
-    tagIds: [ID!]
-    status: PostStatus = DRAFT
-    isFeatured: Boolean = false
-    publishedAt: DateTime
-    seoTitle: String
-    seoDescription: String
-    seoKeywords: String
-    direction: Direction = LTR
+    featured_image: String
+    category_id: ID
+    tag_ids: [ID!]
+    status: PostStatus = draft
+    is_featured: Boolean = false
+    published_at: DateTime
+    seo_title: String
+    seo_description: String
+    seo_keywords: String
+    direction: Direction = ltr
   }
 
   input UpdatePostInput {
     title: String
     content: String
     excerpt: String
-    featuredImage: String
-    categoryId: ID
-    tagIds: [ID!]
+    featured_image: String
+    category_id: ID
+    tag_ids: [ID!]
     status: PostStatus
-    isFeatured: Boolean
-    publishedAt: DateTime
-    seoTitle: String
-    seoDescription: String
-    seoKeywords: String
+    is_featured: Boolean
+    published_at: DateTime
+    seo_title: String
+    seo_description: String
+    seo_keywords: String
     direction: Direction
   }
 
@@ -173,7 +177,7 @@ export const typeDefs = gql`
     slug: String!
     description: String
     parentId: ID
-    direction: Direction = LTR
+    direction: Direction = ltr
   }
 
   input UpdateCategoryInput {
@@ -203,27 +207,27 @@ export const typeDefs = gql`
   }
 
   enum PostStatus {
-    DRAFT
-    PUBLISHED
-    ARCHIVED
+    draft
+    published
+    archived
   }
 
   enum Direction {
-    LTR
-    RTL
+    ltr
+    rtl
   }
 
   enum MediaType {
-    IMAGE
-    VIDEO
-    DOCUMENT
+    image
+    video
+    document
   }
 
   enum UserRole {
-    ADMIN
-    EDITOR
-    AUTHOR
-    CONTRIBUTOR
+    admin
+    editor
+    author
+    contributor
   }
 
   scalar DateTime
